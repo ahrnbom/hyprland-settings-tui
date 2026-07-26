@@ -1,24 +1,47 @@
-from typing import List
+from typing import Dict, List
 from hyprland_schema import HyprOption, Schema
 from textual.app import App
-from textual.widgets import Checkbox, Header, TabPane, TabbedContent, MarkdownViewer
+from textual.widget import Widget
+from textual.widgets import (
+    Checkbox,
+    Collapsible,
+    Header,
+    ListItem,
+    ListView,
+    TabbedContent,
+    MarkdownViewer,
+)
 
 from schema import get_schema
 
 
-def get_main_sections(schema: Schema):
-    sections: List[str] = []
+def get_sections(schema: Schema):
+    """
+    First output: A dictionary which maps all main sections to a list of its subsections (could be empty)
+    Second output: A dictionary mapping all main sections to a list of all options which don't have a subsection
+    """
+    secs: Dict[str, List[str]] = {}
+    nonsub: Dict[str, List[HyprOption]] = {}
     for opt in schema.options:
         sec = opt.section[0]
-        if sec not in sections:
-            sections.append(sec)
-    return sections
+        if sec not in secs:
+            secs[sec] = []
+            nonsub[sec] = []
+
+        if len(opt.section) == 2:
+            subsec = opt.section[1]
+            if subsec not in secs[sec]:
+                secs[sec].append(subsec)
+        elif len(opt.section) == 1:
+            nonsub[sec].append(opt)
+
+    return secs, nonsub
 
 
 def build_option_widget(opt: HyprOption):
     if opt.type == "bool":
         return Checkbox(f"{opt.name}: {opt.description}")
-    return None
+    return MarkdownViewer(opt.name)
 
 
 class UI(App):
@@ -29,19 +52,27 @@ class UI(App):
         self.title = "Hyprland Settings TUI"
         self.sub_title = "A TUI editor for hyprland.lua"
 
-        self.schema_sections = get_main_sections(self.schema)
+        self.schema_sections, self.nonsub = get_sections(self.schema)
         self.special_sections = ["monitors", "keybinds"]
-        self.all_sections = self.special_sections + self.schema_sections
+        self.all_sections = self.special_sections + list(self.schema_sections.keys())
 
-    def build_pane(self, section: str):
+    def build_pane_list(self, section: str):
+        out: List[ListItem] = []
+
         if section in self.schema_sections:
-            opts = self.schema.get_section(section)
-            for opt in opts:
-                w = build_option_widget(opt)
-                if w:
-                    yield w
+            for sub in self.schema_sections[section]:
+                widgets: List[Widget] = []
+                for opt in self.schema.get_subsection(section, sub):
+                    widgets.append(build_option_widget(opt))
+                out.append(ListItem(Collapsible(*widgets, title=sub)))
+
+            for opt in self.nonsub[section]:
+                out.append(ListItem(build_option_widget(opt)))
+
         else:
-            yield MarkdownViewer(section)
+            out.append(ListItem(MarkdownViewer(section)))
+
+        return out
 
     def compose(self):
         header = Header()
@@ -50,9 +81,7 @@ class UI(App):
 
         with TabbedContent(*self.all_sections):
             for section in self.all_sections:
-                with TabPane(section):
-                    for content in self.build_pane(section):
-                        yield content
+                yield ListView(*self.build_pane_list(section))
 
 
 def main():
