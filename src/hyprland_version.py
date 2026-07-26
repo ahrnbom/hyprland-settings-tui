@@ -27,7 +27,7 @@ def determine_hyprland_version():
         if letter not in NUMBERS_AND_DOT:
             return None
 
-    return version
+    return "v" + version
 
 
 if __name__ == "__main__":
