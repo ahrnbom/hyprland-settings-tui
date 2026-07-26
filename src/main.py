@@ -1,17 +1,15 @@
 from typing import Dict, List
 from hyprland_schema import HyprOption, Schema
 from textual.app import App
-from textual.containers import VerticalScroll
+from textual.containers import HorizontalGroup, VerticalScroll
 from textual.widget import Widget
 from textual.widgets import (
     Checkbox,
     Collapsible,
     Header,
+    Input,
     Label,
-    ListItem,
-    ListView,
     TabbedContent,
-    MarkdownViewer,
 )
 
 from schema import get_schema
@@ -48,6 +46,26 @@ def build_option_widget(opt: HyprOption):
             compact=True,
             value=bool(opt.default),
         )
+    elif opt.type == "int":
+        return HorizontalGroup(
+            Label(f"{opt.name}: "),
+            Input(
+                f"{opt.default}",
+                type="integer",
+                tooltip=f"{opt.description}  [{opt.min} - {opt.max}] - default: {opt.default}",
+                compact=True,
+            ),
+        )
+    elif opt.type == "float":
+        return HorizontalGroup(
+            Label(f"{opt.name}: "),
+            Input(
+                f"{opt.default}",
+                type="number",
+                tooltip=f"{opt.description}  [{opt.min} - {opt.max}] - default: {opt.default}",
+                compact=True,
+            ),
+        )
     return Label(opt.name)
 
 
@@ -77,7 +95,7 @@ class UI(App):
                 out.append(build_option_widget(opt))
 
         else:
-            out.append(ListItem(MarkdownViewer(section)))
+            out.append(Label(section))
 
         return out
 
@@ -88,7 +106,9 @@ class UI(App):
 
         with TabbedContent(*self.all_sections):
             for section in self.all_sections:
-                yield VerticalScroll(*self.build_pane_list(section))
+                yield VerticalScroll(
+                    *self.build_pane_list(section), can_focus_children=True
+                )
 
 
 def main():
