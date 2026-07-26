@@ -1,11 +1,13 @@
 from typing import Dict, List
 from hyprland_schema import HyprOption, Schema
 from textual.app import App
+from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import (
     Checkbox,
     Collapsible,
     Header,
+    Label,
     ListItem,
     ListView,
     TabbedContent,
@@ -40,8 +42,13 @@ def get_sections(schema: Schema):
 
 def build_option_widget(opt: HyprOption):
     if opt.type == "bool":
-        return Checkbox(f"{opt.name}: {opt.description}")
-    return MarkdownViewer(opt.name)
+        return Checkbox(
+            f"{opt.name}",
+            tooltip=opt.description,
+            compact=True,
+            value=bool(opt.default),
+        )
+    return Label(opt.name)
 
 
 class UI(App):
@@ -57,17 +64,17 @@ class UI(App):
         self.all_sections = self.special_sections + list(self.schema_sections.keys())
 
     def build_pane_list(self, section: str):
-        out: List[ListItem] = []
+        out: List[Widget] = []
 
         if section in self.schema_sections:
             for sub in self.schema_sections[section]:
                 widgets: List[Widget] = []
                 for opt in self.schema.get_subsection(section, sub):
                     widgets.append(build_option_widget(opt))
-                out.append(ListItem(Collapsible(*widgets, title=sub)))
+                out.append(Collapsible(*widgets, title=sub))
 
             for opt in self.nonsub[section]:
-                out.append(ListItem(build_option_widget(opt)))
+                out.append(build_option_widget(opt))
 
         else:
             out.append(ListItem(MarkdownViewer(section)))
@@ -81,7 +88,7 @@ class UI(App):
 
         with TabbedContent(*self.all_sections):
             for section in self.all_sections:
-                yield ListView(*self.build_pane_list(section))
+                yield VerticalScroll(*self.build_pane_list(section))
 
 
 def main():
