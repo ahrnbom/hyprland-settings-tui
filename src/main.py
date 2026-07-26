@@ -1,7 +1,7 @@
 from typing import List
-from hyprland_schema import Schema
+from hyprland_schema import HyprOption, Schema
 from textual.app import App
-from textual.widgets import Header, TabbedContent, MarkdownViewer
+from textual.widgets import Checkbox, Header, TabPane, TabbedContent, MarkdownViewer
 
 from schema import get_schema
 
@@ -15,6 +15,12 @@ def get_main_sections(schema: Schema):
     return sections
 
 
+def build_option_widget(opt: HyprOption):
+    if opt.type == "bool":
+        return Checkbox(f"{opt.name}: {opt.description}")
+    return None
+
+
 class UI(App):
     def __init__(self, schema: Schema):
         self.schema = schema
@@ -23,12 +29,19 @@ class UI(App):
         self.title = "Hyprland Settings TUI"
         self.sub_title = "A TUI editor for hyprland.lua"
 
-        self.main_sections = get_main_sections(self.schema)
+        self.schema_sections = get_main_sections(self.schema)
         self.special_sections = ["monitors", "keybinds"]
-        self.all_sections = self.special_sections + self.main_sections
+        self.all_sections = self.special_sections + self.schema_sections
 
     def build_pane(self, section: str):
-        return MarkdownViewer(section)
+        if section in self.schema_sections:
+            opts = self.schema.get_section(section)
+            for opt in opts:
+                w = build_option_widget(opt)
+                if w:
+                    yield w
+        else:
+            yield MarkdownViewer(section)
 
     def compose(self):
         header = Header()
@@ -37,7 +50,9 @@ class UI(App):
 
         with TabbedContent(*self.all_sections):
             for section in self.all_sections:
-                yield self.build_pane(section)
+                with TabPane(section):
+                    for content in self.build_pane(section):
+                        yield content
 
 
 def main():
