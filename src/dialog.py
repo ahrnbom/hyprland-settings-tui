@@ -1,4 +1,4 @@
-from textual.containers import Vertical
+from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Label
 
@@ -13,7 +13,7 @@ class Dialog(ModalScreen):
     }
 
     #dialog-container {
-        width: 90%;
+        width: 75%;
         height: auto;
         border: thick $primary;
         background: $panel;
@@ -21,8 +21,9 @@ class Dialog(ModalScreen):
         align: center middle;
     }
     
-    #dialog-container Button {
-        margin-top: 1;
+    Button {
+        margin: 1 4;
+        align: center bottom;
     }
     """
 
@@ -33,8 +34,10 @@ class Dialog(ModalScreen):
     def compose(self):
         with Vertical(id="dialog-container"):
             yield Label(self.row.description)
-            yield Button("Confirm", id="confirm-close", variant="success")
-            yield Button("Cancel", id="cancel-close", variant="error")
+            yield HorizontalGroup(
+                Button("Confirm", id="confirm-close", variant="success"),
+                Button("Cancel", id="cancel-close", variant="error"),
+            )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if "close" in event.button.id:
