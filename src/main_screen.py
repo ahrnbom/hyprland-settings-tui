@@ -1,5 +1,6 @@
 from typing import Dict, List
 from hyprland_schema import Schema
+from hyprland_state import HyprlandState
 from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import DataTable, Header, Label, TabPane, TabbedContent
@@ -35,8 +36,9 @@ class MainScreen(Screen):
         }
     """
 
-    def __init__(self, schema: Schema):
+    def __init__(self, schema: Schema, state: HyprlandState):
         self.schema = schema
+        self.state = state
         super().__init__()
 
         self.title = "Hyprland Settings TUI"

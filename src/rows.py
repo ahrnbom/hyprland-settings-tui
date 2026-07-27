@@ -4,7 +4,6 @@ from random import choice
 from typing import List
 from rich.text import Text
 
-
 from hyprland_schema import HyprOption
 
 

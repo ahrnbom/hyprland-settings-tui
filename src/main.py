@@ -1,7 +1,8 @@
+import hyprland_schema
+from hyprland_state import HyprlandState
 from textual.app import App
 
 from main_screen import MainScreen
-from schema import get_schema
 
 
 class UI(App):
@@ -11,7 +12,10 @@ class UI(App):
     """
 
     def on_mount(self) -> None:
-        self.push_screen(MainScreen(get_schema()))
+        state = HyprlandState()
+        assert state.version, "hyprland not running"
+        schema = hyprland_schema.load(f"v{state.version}")
+        self.push_screen(MainScreen(state=state, schema=schema))
 
 
 def main():
