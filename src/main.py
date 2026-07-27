@@ -1,21 +1,17 @@
-from typing import Dict, List
-from hyprland_schema import HyprOption, Schema
+from typing import List
+from hyprland_schema import Schema
 from textual.app import App
 from textual.binding import Binding
-from textual.containers import HorizontalGroup, VerticalScroll
-from textual.widget import Widget
 from textual.widgets import (
-    Checkbox,
-    Collapsible,
     DataTable,
     Header,
-    Input,
-    Label,
     TabPane,
     TabbedContent,
 )
 
 from schema import get_schema
+from models import TableRow
+from dialog import Dialog
 
 
 def get_sections(schema: Schema):
@@ -26,37 +22,6 @@ def get_sections(schema: Schema):
             secs.append(sec)
 
     return secs
-
-
-def build_option_widget(opt: HyprOption):
-    if opt.type == "bool":
-        return Checkbox(
-            f"{opt.name}",
-            tooltip=opt.description,
-            compact=True,
-            value=bool(opt.default),
-        )
-    elif opt.type == "int":
-        return HorizontalGroup(
-            Label(f"{opt.name}: "),
-            Input(
-                f"{opt.default}",
-                type="integer",
-                tooltip=f"{opt.description}  [{opt.min} - {opt.max}] - default: {opt.default}",
-                compact=True,
-            ),
-        )
-    elif opt.type == "float":
-        return HorizontalGroup(
-            Label(f"{opt.name}: "),
-            Input(
-                f"{opt.default}",
-                type="number",
-                tooltip=f"{opt.description}  [{opt.min} - {opt.max}] - default: {opt.default}",
-                compact=True,
-            ),
-        )
-    return Label(opt.name)
 
 
 def render_is_changed(is_changed: bool):
@@ -83,20 +48,6 @@ class UI(App):
         self.special_sections = ["monitors", "keybinds"]
         self.all_sections = self.special_sections + self.schema_sections
 
-    def build_pane_list(self, section: str):
-        out: List[Widget] = []
-
-        if section in self.schema_sections:
-            for sub in self.schema_sections[section]:
-                widgets: List[Widget] = []
-                for opt in self.schema.get_subsection(section, sub):
-                    widgets.append(build_option_widget(opt))
-                out.append(Collapsible(*widgets, title=sub))
-        else:
-            out.append(Label(section))
-
-        return out
-
     def compose(self):
         header = Header()
         header.icon = "🔥"
@@ -111,19 +62,8 @@ class UI(App):
         table.add_columns("Setting", "Changed", "Value", "Default", "Description")
 
         for opt in self.schema.get_section(section):
-            name = opt.name
-            if len(opt.section) > 1:
-                parts = list(opt.section[1:])
-                parts.append(name)
-                name = ":".join(parts)
-
-            # TODO
-            is_changed = False
-            value = opt.default
-
-            table.add_row(
-                name, render_is_changed(is_changed), value, opt.default, opt.description
-            )
+            row = TableRow.from_opt(opt)
+            table.add_row(*row.to_list())
 
         return table
 
@@ -146,6 +86,11 @@ class UI(App):
 
     def action_prev_tab(self) -> None:
         self.switch_tab(-1)
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected):
+        row_data = event.data_table.get_row(event.row_key)
+        row = TableRow.from_list(row_data)
+        self.push_screen(Dialog(row))
 
 
 def main():
