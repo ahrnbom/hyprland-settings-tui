@@ -14,7 +14,7 @@ class Dialog(ModalScreen):
     }
 
     #dialog-container {
-        width: 75%;
+        width: 50%;
         height: auto;
         border: thick $primary;
         background: $panel;
@@ -30,10 +30,6 @@ class Dialog(ModalScreen):
         margin: 1 0;
     }
 
-    Vertical Label {
-        align: center middle;
-    }
-
     #bottom-buttons {
         align: center bottom;
     }
@@ -46,11 +42,16 @@ class Dialog(ModalScreen):
 
     def compose(self):
         with Vertical(id="dialog-container"):
-            yield Label(self.row_data.name)
-            yield Rule()
-            yield Markdown(self.opt.description)
-
-            yield Checkbox("changed", self.row_data.is_changed, disabled=True)
+            md = "\n".join(
+                [
+                    f"# {self.row_data.name}",
+                    "---",
+                    self.opt.description,
+                    " ",
+                    "changed: [" + ("X" if self.row_data.is_changed else " ") + "]",
+                ]
+            )
+            yield Markdown(md)
 
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),
