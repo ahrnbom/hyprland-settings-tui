@@ -7,7 +7,7 @@ from textual.widgets import DataTable, Header, Label, TabPane, TabbedContent
 
 
 from dialog import Dialog
-from rows import to_row, RowData
+from setting import to_setting, Setting
 
 
 def get_sections(schema: Schema):
@@ -47,7 +47,7 @@ class MainScreen(Screen):
         self.schema_sections = get_sections(self.schema)
         self.special_sections = ["monitors", "keybinds"]
 
-        self.row_data: Dict[str, RowData] = {}
+        self.row_data: Dict[str, Setting] = {}
 
     def compose(self):
         header = Header(show_clock=True)
@@ -63,10 +63,12 @@ class MainScreen(Screen):
 
     def make_table(self, section: str):
         table = DataTable(name=section, zebra_stripes=True, cursor_type="row")
-        table.add_columns("Setting", "Status", "Value", "Default", "Description")
+        table.add_columns(
+            "Setting", "Status", "Value", "Default", "On disk", "Description"
+        )
 
         for opt in self.schema.get_section(section):
-            row_data = to_row(opt)
+            row_data = to_setting(opt, self.state, section)
             key = f"{section}::{':'.join(opt.section)}::{opt.name}"
             row_key = table.add_row(*row_data.row, key=key)
             assert row_key.value

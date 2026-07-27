@@ -2,7 +2,7 @@ from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Markdown
 
-from rows import RowData
+from setting import Setting
 
 
 class Dialog(ModalScreen):
@@ -34,7 +34,7 @@ class Dialog(ModalScreen):
     }
     """
 
-    def __init__(self, row_data: RowData):
+    def __init__(self, row_data: Setting):
         super().__init__()
         self.row_data = row_data
         self.opt = row_data.opt
