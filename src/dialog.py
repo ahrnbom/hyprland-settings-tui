@@ -1,8 +1,9 @@
+from hyprland_schema import HyprOption
 from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Checkbox, Label, Markdown, Rule
 
-from models import TableRow
+from rows import RowData
 
 
 class Dialog(ModalScreen):
@@ -38,19 +39,18 @@ class Dialog(ModalScreen):
     }
     """
 
-    def __init__(self, row: TableRow):
+    def __init__(self, row_data: RowData):
         super().__init__()
-        self.row = row
+        self.row_data = row_data
+        self.opt = row_data.opt
 
     def compose(self):
         with Vertical(id="dialog-container"):
-            yield Label(self.row.name)
+            yield Label(self.row_data.name)
             yield Rule()
-            yield Markdown(self.row.description)
+            yield Markdown(self.opt.description)
 
-            yield Checkbox("changed", self.row.is_changed, disabled=True)
-
-            
+            yield Checkbox("changed", self.row_data.is_changed, disabled=True)
 
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),

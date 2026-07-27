@@ -1,11 +1,11 @@
-from typing import List
+from typing import Dict, List
 from hyprland_schema import Schema
 from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import DataTable, Header, Label, TabPane, TabbedContent
 
 from dialog import Dialog
-from models import TableRow
+from rows import to_row, RowData
 
 
 def get_sections(schema: Schema):
@@ -44,6 +44,8 @@ class MainScreen(Screen):
         self.schema_sections = get_sections(self.schema)
         self.special_sections = ["monitors", "keybinds"]
 
+        self.row_data: Dict[str, RowData] = {}
+
     def compose(self):
         header = Header(show_clock=True)
         header.icon = "🔥"
@@ -61,8 +63,11 @@ class MainScreen(Screen):
         table.add_columns("Setting", "Changed", "Value", "Default", "Description")
 
         for opt in self.schema.get_section(section):
-            row = TableRow.from_opt(opt)
-            table.add_row(*row.to_list())
+            row_data = to_row(opt)
+            key = f"{section}::{':'.join(opt.section)}::{opt.name}"
+            row_key = table.add_row(*row_data.row, key=key)
+            assert row_key.value
+            self.row_data[row_key.value] = row_data
 
         return table
 
@@ -90,9 +95,11 @@ class MainScreen(Screen):
         self.switch_tab(-1)
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
-        row_data = event.data_table.get_row(event.row_key)
-        row = TableRow.from_list(row_data)
-        self.app.push_screen(Dialog(row))
+        if not event.row_key.value:
+            return
+
+        row_data = self.row_data[event.row_key.value]
+        self.app.push_screen(Dialog(row_data))
 
 
 def render_is_changed(is_changed: bool):
