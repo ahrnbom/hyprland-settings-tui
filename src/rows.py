@@ -1,20 +1,27 @@
 from dataclasses import dataclass
+import enum
 from random import choice
 from typing import List
 
 from hyprland_schema import HyprOption
 
 
+class Status(enum.Enum):
+    DEFAULT = "default"
+    PENDING = "pending"
+    CHANGED = "changed"
+
+
 @dataclass
 class RowData:
     opt: HyprOption
-    is_changed: bool
+    status: Status
     name: str
     row: List
 
 
 def to_row(opt: HyprOption):
-    row = RowData(opt, False, "", [])
+    row = RowData(opt, Status.DEFAULT, "", [])
 
     name = row.opt.name
     if len(row.opt.section) > 1:
@@ -28,8 +35,8 @@ def to_row(opt: HyprOption):
     default = row.opt.default
 
     # TODO
-    row.is_changed = choice([True, False])
+    row.status = choice([Status.CHANGED, Status.DEFAULT, Status.PENDING])
     value = row.opt.default
 
-    row.row = [name, row.is_changed, value, default, description]
+    row.row = [name, row.status.value, value, default, description]
     return row

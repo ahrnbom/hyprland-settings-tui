@@ -47,7 +47,7 @@ class Dialog(ModalScreen):
                     "---",
                     self.opt.description,
                     " ",
-                    "changed: [" + ("X" if self.row_data.is_changed else " ") + "]",
+                    f"status: {self.row_data.status.value}",
                 ]
             )
             yield Markdown(md)

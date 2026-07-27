@@ -60,7 +60,7 @@ class MainScreen(Screen):
 
     def make_table(self, section: str):
         table = DataTable(name=section, zebra_stripes=True, cursor_type="row")
-        table.add_columns("Setting", "Changed", "Value", "Default", "Description")
+        table.add_columns("Setting", "Status", "Value", "Default", "Description")
 
         for opt in self.schema.get_section(section):
             row_data = to_row(opt)
@@ -100,9 +100,3 @@ class MainScreen(Screen):
 
         row_data = self.row_data[event.row_key.value]
         self.app.push_screen(Dialog(row_data))
-
-
-def render_is_changed(is_changed: bool):
-    if is_changed:
-        return "O"
-    return "-"
