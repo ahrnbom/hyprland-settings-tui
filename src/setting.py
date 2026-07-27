@@ -37,50 +37,59 @@ class Setting:
 def sanitize_string(x: str):
     if x == "[[Auto]]":
         return ""
-
-    x = x.removesuffix(" 0deg")
-
-    if x.startswith("0x"):
-        pre, _, post = x.partition(" ")
-        num = int(pre, 0)
-        x = f"{num} {post}".strip()
-
     return x
 
 
-def is_similar(x, y):
-    """
-    Unfortunately, the formats provided from the hyprland_state API vary wildly and converting Lua <-> Python
-    is not exactly one-to-one, hence these hacks
-    """
-    if (isinstance(x, list) or isinstance(x, tuple)) and (
-        isinstance(y, list) or isinstance(y, tuple)
-    ):
-        if len(x) != len(y):
+def as_bool(x):
+    if isinstance(x, str):
+        if x.lower().strip() == "false":
             return False
 
-        for xx, yy in zip(x, y):
-            if not is_similar(xx, yy):
-                return False
+    return bool(x)
 
-        return True
 
+def as_vec2(x):
     if isinstance(x, str):
-        x = sanitize_string(x)
+        x = tuple(x.split(" "))
 
-    if isinstance(y, str):
-        y = sanitize_string(y)
+    return tuple([float(v) for v in x])
 
-    if str(x).lower().strip() == str(y).lower().strip():
-        return True
 
+def as_color(x):
+    # TODO
+    return sanitize_string(x)
+
+
+def as_int(x):
     try:
-        xx = float(x)
-        yy = float(y)
+        return int(x)
     except (ValueError, TypeError):
-        return False
+        return None
 
-    return abs(xx - yy) < 0.0001
+
+def as_float(x):
+    try:
+        return float(x)
+    except (ValueError, TypeError):
+        return None
+
+
+def canonical_form(x, opt: HyprOption):
+    if x is None:
+        return None
+
+    if opt.type == "bool":
+        return as_bool(x)
+    elif opt.type == "int":
+        return as_int(x)
+    elif opt.type == "float":
+        return as_float(x)
+    elif opt.type == "color" or opt.type == "gradient":
+        return as_color(x)
+    elif opt.type == "vec2":
+        return as_vec2(x)
+
+    return sanitize_string(x)
 
 
 def to_setting(opt: HyprOption, state: HyprlandState, section: str):
@@ -102,13 +111,14 @@ def to_setting(opt: HyprOption, state: HyprlandState, section: str):
         setting.value = None
         return setting
 
+    value = canonical_form(value, opt)
     setting.value = value
 
     disk_value = state.get_disk(full_name)
-    setting.disk = disk_value
+    setting.disk = canonical_form(disk_value, opt)
 
-    if is_similar(setting.disk, setting.value) or setting.disk is None:
-        if is_similar(value, opt.default):
+    if setting.disk == setting.value or setting.disk is None:
+        if value == opt.default:
             setting.status = Status.DEFAULT
         else:
             setting.status = Status.CHANGED
