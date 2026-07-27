@@ -93,6 +93,13 @@ def canonical_form(x, opt: HyprOption):
     return sanitize_string(x)
 
 
+def is_similar(x, y):
+    if isinstance(x, float) and isinstance(y, float):
+        return abs(x - y) < (0.01 * max(abs(x), abs(y)))
+
+    return x == y
+
+
 def to_setting(opt: HyprOption, state: HyprlandState, section: str):
     setting = Setting(opt)
 
@@ -119,8 +126,8 @@ def to_setting(opt: HyprOption, state: HyprlandState, section: str):
     setting.disk = canonical_form(disk_value, opt)
     setting.default = canonical_form(opt.default, opt)
 
-    if setting.disk == setting.value or setting.disk is None:
-        if setting.value == setting.default:
+    if is_similar(setting.disk, setting.value) or setting.disk is None:
+        if is_similar(setting.value, setting.default):
             setting.status = Status.DEFAULT
         else:
             setting.status = Status.CHANGED
