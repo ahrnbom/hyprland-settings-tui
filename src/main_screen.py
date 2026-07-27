@@ -45,7 +45,7 @@ class MainScreen(Screen):
         self.special_sections = ["monitors", "keybinds"]
 
     def compose(self):
-        header = Header()
+        header = Header(show_clock=True)
         header.icon = "🔥"
         yield header
 

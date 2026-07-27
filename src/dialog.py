@@ -1,6 +1,6 @@
 from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Label
+from textual.widgets import Button, Checkbox, Label, Markdown, Rule
 
 from models import TableRow
 
@@ -25,6 +25,14 @@ class Dialog(ModalScreen):
         margin: 1 4;
     }
 
+    Markdown {
+        margin: 1 0;
+    }
+
+    Vertical Label {
+        align: center middle;
+    }
+
     #bottom-buttons {
         align: center bottom;
     }
@@ -36,7 +44,14 @@ class Dialog(ModalScreen):
 
     def compose(self):
         with Vertical(id="dialog-container"):
-            yield Label(self.row.description)
+            yield Label(self.row.name)
+            yield Rule()
+            yield Markdown(self.row.description)
+
+            yield Checkbox("changed", self.row.is_changed, disabled=True)
+
+            
+
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),
                 Button("Cancel", id="cancel-close", variant="error"),
