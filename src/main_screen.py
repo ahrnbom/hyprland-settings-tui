@@ -2,7 +2,7 @@ from typing import List
 from hyprland_schema import Schema
 from textual.binding import Binding
 from textual.screen import Screen
-from textual.widgets import DataTable, Header, TabPane, TabbedContent
+from textual.widgets import DataTable, Header, Label, TabPane, TabbedContent
 
 from dialog import Dialog
 from models import TableRow
@@ -43,15 +43,17 @@ class MainScreen(Screen):
 
         self.schema_sections = get_sections(self.schema)
         self.special_sections = ["monitors", "keybinds"]
-        self.all_sections = self.special_sections + self.schema_sections
 
     def compose(self):
         header = Header()
         header.icon = "🔥"
         yield header
 
-        with TabbedContent(*self.all_sections):
-            for section in self.all_sections:
+        with TabbedContent(*(self.special_sections + self.schema_sections)):
+            for section in self.special_sections:
+                yield self.make_special_section(section)
+
+            for section in self.schema_sections:
                 yield self.make_table(section)
 
     def make_table(self, section: str):
@@ -64,6 +66,9 @@ class MainScreen(Screen):
 
         return table
 
+    def make_special_section(self, section: str):
+        return Label(section)
+
     def switch_tab(self, delta: int) -> None:
         tabbed_content = self.query_one(TabbedContent)
         panes = list(tabbed_content.query(TabPane))
@@ -75,7 +80,7 @@ class MainScreen(Screen):
             if pane.id == current_id:
                 next_pane = panes[(i + delta) % len(panes)]
                 tabbed_content.active = next_pane.id
-                next_pane.query_one(DataTable).focus()
+                next_pane.query_one("*").focus()
                 break
 
     def action_next_tab(self) -> None:

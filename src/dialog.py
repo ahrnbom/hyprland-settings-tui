@@ -23,6 +23,9 @@ class Dialog(ModalScreen):
     
     Button {
         margin: 1 4;
+    }
+
+    #bottom-buttons {
         align: center bottom;
     }
     """
@@ -37,6 +40,7 @@ class Dialog(ModalScreen):
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),
                 Button("Cancel", id="cancel-close", variant="error"),
+                id="bottom-buttons",
             )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
