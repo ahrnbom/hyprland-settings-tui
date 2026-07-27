@@ -1,7 +1,6 @@
-from hyprland_schema import HyprOption
 from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Checkbox, Label, Markdown, Rule
+from textual.widgets import Button, Markdown
 
 from rows import RowData
 

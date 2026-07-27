@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from random import choice
 from typing import List
 
 from hyprland_schema import HyprOption
@@ -27,8 +28,8 @@ def to_row(opt: HyprOption):
     default = row.opt.default
 
     # TODO
-    is_changed = False
+    row.is_changed = choice([True, False])
     value = row.opt.default
 
-    row.row = [name, is_changed, value, default, description]
+    row.row = [name, row.is_changed, value, default, description]
     return row
