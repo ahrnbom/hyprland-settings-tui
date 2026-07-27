@@ -1,0 +1,8 @@
+TabPane {
+    overflow: hidden;
+}
+
+DataTable {
+    height: 1fr;
+    overflow-x: hidden;
+}
