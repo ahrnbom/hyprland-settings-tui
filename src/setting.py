@@ -34,18 +34,45 @@ class Setting:
         ]
 
 
-def is_similar(x, y):
-    if isinstance(x, tuple):
-        x = list(x)
+def sanitize_string(x: str):
+    if x == "[[Auto]]":
+        return ""
 
-    if isinstance(y, tuple):
-        y = list(y)
+    x = x.removesuffix(" 0deg")
+
+    if x.startswith("0x"):
+        pre, _, post = x.partition(" ")
+        num = int(pre, 0)
+        x = f"{num} {post}".strip()
+
+    return x
+
+
+def is_similar(x, y):
+    """
+    Unfortunately, the formats provided from the hyprland_state API vary wildly and converting Lua <-> Python
+    is not exactly one-to-one, hence these hacks
+    """
+    if (isinstance(x, list) or isinstance(x, tuple)) and (
+        isinstance(y, list) or isinstance(y, tuple)
+    ):
+        if len(x) != len(y):
+            return False
+
+        for xx, yy in zip(x, y):
+            if not is_similar(xx, yy):
+                return False
+
+        return True
+
+    if isinstance(x, str):
+        x = sanitize_string(x)
+
+    if isinstance(y, str):
+        y = sanitize_string(y)
 
     if str(x).lower().strip() == str(y).lower().strip():
         return True
-
-    if isinstance(x, list) or isinstance(y, list):
-        return False
 
     try:
         xx = float(x)
@@ -53,7 +80,7 @@ def is_similar(x, y):
     except (ValueError, TypeError):
         return False
 
-    return abs(xx - yy) < 0.01
+    return abs(xx - yy) < 0.0001
 
 
 def to_setting(opt: HyprOption, state: HyprlandState, section: str):
