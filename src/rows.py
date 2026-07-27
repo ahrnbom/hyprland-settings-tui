@@ -2,14 +2,16 @@ from dataclasses import dataclass
 import enum
 from random import choice
 from typing import List
+from rich.text import Text
+
 
 from hyprland_schema import HyprOption
 
 
 class Status(enum.Enum):
-    DEFAULT = "default"
-    PENDING = "pending"
-    CHANGED = "changed"
+    DEFAULT = Text("default", style="white")
+    PENDING = Text("pending", style="magenta")
+    CHANGED = Text("changed", style="blue")
 
 
 @dataclass

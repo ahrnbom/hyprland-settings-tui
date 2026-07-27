@@ -4,6 +4,7 @@ from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import DataTable, Header, Label, TabPane, TabbedContent
 
+
 from dialog import Dialog
 from rows import to_row, RowData
 
