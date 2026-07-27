@@ -2,8 +2,9 @@ from dataclasses import dataclass
 import enum
 from hyprland_state import HyprlandState
 from rich.text import Text
-
 from hyprland_schema import HyprOption
+
+from colors import Gradient, parse_gradient
 
 
 class Status(enum.Enum):
@@ -19,8 +20,9 @@ class Setting:
     status: Status = Status.DEFAULT
     name: str = ""
     section: str = ""
-    value: int | float | str | bool | tuple | None = None
+    value: int | float | str | bool | tuple | Gradient | None = None
     disk: str | None = None
+    default: int | float | str | bool | tuple | Gradient | None = None
 
     @property
     def row(self):
@@ -28,7 +30,7 @@ class Setting:
             self.name,
             self.status.value,
             self.value,
-            self.opt.default,
+            self.default,
             self.disk,
             self.opt.description,
         ]
@@ -56,8 +58,7 @@ def as_vec2(x):
 
 
 def as_color(x):
-    # TODO
-    return sanitize_string(x)
+    return parse_gradient(x)
 
 
 def as_int(x):
@@ -116,9 +117,10 @@ def to_setting(opt: HyprOption, state: HyprlandState, section: str):
 
     disk_value = state.get_disk(full_name)
     setting.disk = canonical_form(disk_value, opt)
+    setting.default = canonical_form(opt.default, opt)
 
     if setting.disk == setting.value or setting.disk is None:
-        if value == opt.default:
+        if setting.value == setting.default:
             setting.status = Status.DEFAULT
         else:
             setting.status = Status.CHANGED
