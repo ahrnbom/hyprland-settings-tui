@@ -63,7 +63,7 @@ def pairwise(values: str):
         yield values[2 * i : 2 * (i + 1)]
 
 
-def parse_color(val: str | int, can_be_argb=True) -> Color:
+def parse_color(val: str | int, can_be_argb=True):
     if isinstance(val, int) and val < 0:
         return Color(0, 0, 0)
 
@@ -108,13 +108,13 @@ def parse_color(val: str | int, can_be_argb=True) -> Color:
     # Match short web hash #RGB
     ss = s.removeprefix("#")
     if len(ss) == 3:
-        r, g, b = [int(x + x, 16) for x in ss]
+        r, g, b = [int(f"{x}{x}", 16) for x in ss]
         return Color(r=r, g=g, b=b)
 
     raise ValueError(f"Unknown or malformed color format: {val}")
 
 
-def parse_gradient(x: str | int) -> Gradient:
+def parse_gradient(x: str | int):
     if isinstance(x, str):
         values = [v for v in x.split(" ") if v]
         if len(values) == 1:
