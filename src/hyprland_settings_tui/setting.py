@@ -4,7 +4,7 @@ from hyprland_state import HyprlandState
 from rich.text import Text
 from hyprland_schema import HyprOption
 
-from colors import Gradient, parse_gradient
+from hyprland_settings_tui.colors import Gradient, parse_gradient
 
 
 class Status(enum.Enum):

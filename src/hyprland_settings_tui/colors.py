@@ -25,6 +25,11 @@ class Color:
     def __str__(self):
         return self.to_hex(include_alpha=self.a != 255)
 
+    def __eq__(self, other):
+        if not isinstance(other, Color):
+            return False 
+        
+        return self.a == other.a and self.r == other.r and self.g == other.g and self.b == other.b
 
 @dataclass(frozen=True)
 class Gradient:
@@ -61,6 +66,24 @@ def parse_color(val: str | int) -> Color:
 
     s = str(val).strip().lower()
 
+    if s.endswith(")"):
+        if s.startswith("rgb("):
+            ss = s.removeprefix("rgb(").removesuffix(")")
+            return parse_color(ss)
+        
+        if s.startswith("rgba("):
+            ss = s.removeprefix("rgba(").removesuffix(")")
+            return parse_color(ss)
+
+    if "," in s:
+        values = [x.strip().lower() for x in s.split(",")]
+        if len(values) in (3, 4):
+            r, g, b = [int(x) for x in values[:3]]
+            a = 255 
+            if len(values) == 4:
+                a = int(round(255*float(values[-1])))
+            return Color(r=r, g=g, b=b, a=a)
+
     # Match 0xAARRGGBB or just AARRGGBB
     ss = s.removeprefix("0x")
     if len(ss) == 8:
@@ -81,23 +104,6 @@ def parse_color(val: str | int) -> Color:
         r, g, b = [int(x + x, 16) for x in ss]
         return Color(r=r, g=g, b=b)
     
-    # Match functional hex macros with optional spaces: rgb( b3ff1a )
-    if m := re.match(r"^rgba?\(\s*([0-9a-f]{6})([0-9a-f]{2})?\s*\)$", s):
-        rgb_part, alpha_part = m.groups()
-        return Color(
-            r=int(rgb_part[0:2], 16),
-            g=int(rgb_part[2:4], 16),
-            b=int(rgb_part[4:6], 16),
-            a=int(alpha_part, 16) if alpha_part else 255,
-        )
-
-    # Match functional decimal macros WITH optional spaces anywhere inside the call
-    # \s* allows any amount of spacing around numbers, commas, and parentheses
-    if m := re.match(
-        r"^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$", s
-    ):
-        r, g, b, a = m.groups()
-        return Color(r=int(r), g=int(g), b=int(b), a=int(a) if a is not None else 255)
 
     raise ValueError(f"Unknown or malformed color format: {val}")
 

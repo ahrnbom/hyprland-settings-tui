@@ -6,8 +6,8 @@ from textual.screen import Screen
 from textual.widgets import DataTable, Header, Label, TabPane, TabbedContent
 
 
-from dialog import Dialog
-from setting import to_setting, Setting
+from hyprland_settings_tui.dialog import Dialog
+from hyprland_settings_tui.setting import to_setting, Setting
 
 
 def get_sections(schema: Schema):

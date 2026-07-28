@@ -2,7 +2,7 @@ import hyprland_schema
 from hyprland_state import HyprlandState
 from textual.app import App
 
-from main_screen import MainScreen
+from hyprland_settings_tui.main_screen import MainScreen
 
 
 class UI(App):

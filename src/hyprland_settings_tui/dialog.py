@@ -2,7 +2,7 @@ from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Markdown
 
-from setting import Setting
+from hyprland_settings_tui.setting import Setting
 
 
 class Dialog(ModalScreen):
