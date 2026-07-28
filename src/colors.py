@@ -46,6 +46,10 @@ class Gradient:
     def __eq__(self, other):
         return str(self) == str(other)
 
+def pairwise(values: str):
+    l = len(values)
+    for i in range(l//2):
+        yield values[2*i:2*(i+1)]
 
 def parse_color(val: str | int) -> Color:
     if isinstance(val, int) and val < 0:
@@ -57,31 +61,26 @@ def parse_color(val: str | int) -> Color:
 
     s = str(val).strip().lower()
 
-    # Match 0xAARRGGBB or just AARRGGBB (8-char hex without #) -> Legacy ARGB
-    if m := re.match(r"^(?:0x)?([0-9a-f]{8})$", s):
-        hex_str = m.group(1)
-        return Color(
-            r=int(hex_str[2:4], 16),
-            g=int(hex_str[4:6], 16),
-            b=int(hex_str[6:8], 16),
-            a=int(hex_str[0:2], 16),
-        )
+    # Match 0xAARRGGBB or just AARRGGBB
+    ss = s.removeprefix("0x")
+    if len(ss) == 8:
+        a, r, g, b = [int(x, 16) for x in pairwise(ss)]
+        return Color(r=r, g=g, b=b, a=a)
 
     # Match standard #RRGGBBAA or #RRGGBB
-    if m := re.match(r"^#([0-9a-f]{6})([0-9a-f]{2})?$", s):
-        rgb_part, alpha_part = m.groups()
-        return Color(
-            r=int(rgb_part[0:2], 16),
-            g=int(rgb_part[2:4], 16),
-            b=int(rgb_part[4:6], 16),
-            a=int(alpha_part, 16) if alpha_part else 255,
-        )
+    ss = s.removeprefix("#")
+    if len(ss) == 6:
+        ss += "ff"
+    if len(ss) == 8:
+        r, g, b, a = [int(x, 16) for x in pairwise(ss)]
+        return Color(r=r, g=g, b=b, a=a)
 
     # Match short web hash #RGB
-    if m := re.match(r"^#([0-9a-f]{3})$", s):
-        h = m.group(1)
-        return Color(r=int(h[0] * 2, 16), g=int(h[1] * 2, 16), b=int(h[2] * 2, 16))
-
+    ss = s.removeprefix("#")
+    if len(ss) == 3:
+        r, g, b = [int(x + x, 16) for x in ss]
+        return Color(r=r, g=g, b=b)
+    
     # Match functional hex macros with optional spaces: rgb( b3ff1a )
     if m := re.match(r"^rgba?\(\s*([0-9a-f]{6})([0-9a-f]{2})?\s*\)$", s):
         rgb_part, alpha_part = m.groups()
