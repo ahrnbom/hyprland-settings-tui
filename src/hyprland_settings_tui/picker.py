@@ -1,7 +1,6 @@
-from textual.containers import HorizontalGroup, VerticalGroup
+from textual.containers import HorizontalGroup
 from textual.widget import Widget
 from textual.widgets import Input, Static
-from textual.color import Color as TextualColor
 
 from hyprland_settings_tui.colors import parse_color
 from hyprland_settings_tui.setting import Setting
@@ -76,7 +75,7 @@ class ColorPicker(Picker):
             color = None
 
         if color is not None:
-            tcol = TextualColor(color.r, color.g, color.b, color.a / 255.0)
+            tcol = color.to_textual()
             self.color_preview.styles.background = tcol
 
             if tcol.brightness > 0.5:

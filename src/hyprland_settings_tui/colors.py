@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from textual.color import Color as TextualColor
 
 @dataclass(frozen=True)
 class Color:
@@ -20,6 +21,9 @@ class Color:
 
     def to_rgba_tuple(self):
         return (self.r, self.g, self.b, self.a)
+
+    def to_textual(self):
+        return TextualColor(self.r, self.g, self.b, self.a / 255.0)
 
     def __str__(self):
         return self.to_hex(include_alpha=self.a != 255)
@@ -74,13 +78,17 @@ def parse_color(val: str | int, can_be_argb=True):
     s = str(val).strip().lower()
 
     if s.endswith(")"):
+        col: Color | None = None 
         if s.startswith("rgb("):
             ss = s.removeprefix("rgb(").removesuffix(")")
-            return parse_color(ss, can_be_argb=False)
-
+            col = parse_color(ss, can_be_argb=False)
+            
         if s.startswith("rgba("):
             ss = s.removeprefix("rgba(").removesuffix(")")
-            return parse_color(ss, can_be_argb=False)
+            col = parse_color(ss, can_be_argb=False)
+
+        if isinstance(col, Color):
+            return col
 
     if "," in s:
         values = [x.strip().lower() for x in s.split(",")]
