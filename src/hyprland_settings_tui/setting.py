@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 import enum
+from functools import lru_cache
+from typing import List
 from hyprland_state import HyprlandState
 from rich.text import Text
 from hyprland_schema import HyprOption
@@ -8,10 +10,26 @@ from hyprland_settings_tui.colors import Gradient, parse_gradient
 
 
 class Status(enum.Enum):
-    DEFAULT = Text("default", style="white")
+    DEFAULT = Text("default", style="bright_yellow")
     PENDING = Text("pending", style="yellow")
     CHANGED = Text("changed", style="blue")
-    UNKNOWN = Text(" ????? ", style="red")
+    UNKNOWN = Text("  N/A  ", style="red")
+
+
+@lru_cache(16)
+def type_with_color(type_text: str):
+    styles = {
+        "int": "yellow",
+        "float": "green",
+        "string": "blue",
+        "color": "magenta",
+        "gradient": "bright_magenta",
+        "vec2": "bright_yellow",
+        "choice": "cyan",
+        "cssgap": "red",
+        "bool": "white",
+    }
+    return Text(type_text, style=styles.get(type_text, "white"))
 
 
 @dataclass
@@ -32,6 +50,7 @@ class Setting:
             self.value,
             self.default,
             self.disk,
+            type_with_color(self.opt.type),
             self.opt.description,
         ]
 
@@ -57,7 +76,7 @@ def as_vec2(x):
     return tuple([float(v) for v in x])
 
 
-def as_color(x):
+def as_gradient(x):
     return parse_gradient(x)
 
 
@@ -75,6 +94,34 @@ def as_float(x):
         return None
 
 
+def as_css_gap(x) -> List[int] | None:
+    if isinstance(x, str):
+        x = [int(v) for v in x.strip().split(" ")]
+
+    if isinstance(x, int):
+        x = [x]
+
+    if x is None:
+        x = []
+
+    assert isinstance(x, list)
+
+    if len(x) == 4:
+        return x
+
+    if len(x) == 3:
+        top, lr, bot = x
+        return [top, lr, bot, lr]
+
+    if len(x) == 2:
+        tb, lr = x
+        return [tb, lr, tb, lr]
+
+    if len(x) == 1:
+        (tblr,) = x
+        return [tblr, tblr, tblr, tblr]
+
+
 def canonical_form(x, opt: HyprOption):
     if x is None:
         return None
@@ -86,9 +133,11 @@ def canonical_form(x, opt: HyprOption):
     elif opt.type == "float":
         return as_float(x)
     elif opt.type == "color" or opt.type == "gradient":
-        return as_color(x)
+        return as_gradient(x)
     elif opt.type == "vec2":
         return as_vec2(x)
+    elif opt.type == "cssgap":
+        return as_css_gap(x)
 
     return sanitize_string(x)
 

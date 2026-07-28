@@ -64,7 +64,7 @@ class MainScreen(Screen):
     def make_table(self, section: str):
         table = DataTable(name=section, zebra_stripes=True, cursor_type="row")
         table.add_columns(
-            "Setting", "Status", "Value", "Default", "On disk", "Description"
+            "Setting", "Status", "Value", "Default", "On disk", "Type", "Description"
         )
 
         for opt in self.schema.get_section(section):

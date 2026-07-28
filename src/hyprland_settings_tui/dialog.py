@@ -1,16 +1,10 @@
-from typing import Optional
-
 from textual.binding import Binding
 from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Input, Markdown
+from textual.widgets import Button, Markdown
 
+from hyprland_settings_tui.picker import Picker, make_picker
 from hyprland_settings_tui.setting import Setting
-
-
-def make_picker(setting: Setting):
-    if setting.opt.type == "int":
-        return Input(type="integer")
 
 
 class Dialog(ModalScreen):
@@ -53,7 +47,7 @@ class Dialog(ModalScreen):
         super().__init__()
         self.setting = setting
         self.opt = setting.opt
-        self.picker: Input | None = None
+        self.picker: Picker | None
 
     def compose(self):
         with Vertical(id="dialog-container"):
@@ -70,10 +64,9 @@ class Dialog(ModalScreen):
             )
             yield Markdown(md)
 
-            picker = make_picker(self.setting)
-            if picker:
-                self.picker = picker
-                yield picker
+            self.picker = make_picker(self.setting)
+            if self.picker is not None:
+                yield self.picker.widget
 
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),
