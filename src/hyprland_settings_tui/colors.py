@@ -27,9 +27,15 @@ class Color:
 
     def __eq__(self, other):
         if not isinstance(other, Color):
-            return False 
-        
-        return self.a == other.a and self.r == other.r and self.g == other.g and self.b == other.b
+            return False
+
+        return (
+            self.a == other.a
+            and self.r == other.r
+            and self.g == other.g
+            and self.b == other.b
+        )
+
 
 @dataclass(frozen=True)
 class Gradient:
@@ -51,12 +57,14 @@ class Gradient:
     def __eq__(self, other):
         return str(self) == str(other)
 
+
 def pairwise(values: str):
     l = len(values)
-    for i in range(l//2):
-        yield values[2*i:2*(i+1)]
+    for i in range(l // 2):
+        yield values[2 * i : 2 * (i + 1)]
 
-def parse_color(val: str | int) -> Color:
+
+def parse_color(val: str | int, can_be_argb=True) -> Color:
     if isinstance(val, int) and val < 0:
         return Color(0, 0, 0)
 
@@ -69,24 +77,24 @@ def parse_color(val: str | int) -> Color:
     if s.endswith(")"):
         if s.startswith("rgb("):
             ss = s.removeprefix("rgb(").removesuffix(")")
-            return parse_color(ss)
-        
+            return parse_color(ss, can_be_argb=False)
+
         if s.startswith("rgba("):
             ss = s.removeprefix("rgba(").removesuffix(")")
-            return parse_color(ss)
+            return parse_color(ss, can_be_argb=False)
 
     if "," in s:
         values = [x.strip().lower() for x in s.split(",")]
         if len(values) in (3, 4):
             r, g, b = [int(x) for x in values[:3]]
-            a = 255 
+            a = 255
             if len(values) == 4:
-                a = int(round(255*float(values[-1])))
+                a = int(round(255 * float(values[-1])))
             return Color(r=r, g=g, b=b, a=a)
 
     # Match 0xAARRGGBB or just AARRGGBB
     ss = s.removeprefix("0x")
-    if len(ss) == 8:
+    if len(ss) == 8 and can_be_argb:
         a, r, g, b = [int(x, 16) for x in pairwise(ss)]
         return Color(r=r, g=g, b=b, a=a)
 
@@ -103,7 +111,6 @@ def parse_color(val: str | int) -> Color:
     if len(ss) == 3:
         r, g, b = [int(x + x, 16) for x in ss]
         return Color(r=r, g=g, b=b)
-    
 
     raise ValueError(f"Unknown or malformed color format: {val}")
 

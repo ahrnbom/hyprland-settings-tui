@@ -48,17 +48,23 @@ source = { editable = "." }
 dependencies = [
     { name = "hyprland-state" },
     { name = "msgspec" },
-    { name = "pytest" },
     { name = "textual" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "hyprland-state", specifier = "~=0.4.3" },
     { name = "msgspec", specifier = "~=0.21.1" },
-    { name = "pytest", specifier = ">=9.1.1" },
     { name = "textual", specifier = "~=8.2.8" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "hyprland-socket"
