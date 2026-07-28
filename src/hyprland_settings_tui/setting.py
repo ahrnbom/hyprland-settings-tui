@@ -118,9 +118,7 @@ def to_setting(opt: HyprOption, state: HyprlandState, section: str):
         setting.status = Status.UNKNOWN
         setting.value = None
         return setting
-
-    value = canonical_form(value, opt)
-    setting.value = value
+    setting.value = canonical_form(value, opt)
 
     disk_value = state.get_disk(full_name)
     setting.disk = canonical_form(disk_value, opt)
