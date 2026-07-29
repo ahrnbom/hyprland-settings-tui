@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict, List
+from hyprland_config import default_entrypoint, serialize_lua
 from hyprland_schema import Schema
 from hyprland_state import HyprlandState
 from textual.binding import Binding
@@ -113,9 +114,13 @@ class MainScreen(Screen):
 
     def action_save_exit(self):
         if self.state.is_dirty():
-            # self.state.save()
-            # TODO this is buggy, writes .conf formatted instead of lua!
-            pass    
+            # TODO state.save is buggy, writes .conf formatted instead of lua!
+            # This is a really hacky workaround, not sure about the state of state after this
+            for key, value in self.state._pending.items():
+                self.state.document.set(key, value)
+            as_lua = serialize_lua(self.state.document)
+            default_entrypoint().write_text(as_lua)
+
         self.app.exit()
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
