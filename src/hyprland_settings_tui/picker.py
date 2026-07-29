@@ -193,31 +193,42 @@ class Vec2Picker(Picker):
         return (x, y)
 
 
+def make_spacer():
+    spacer = Static()
+    spacer.styles.width = "100%"
+    spacer.styles.height = "100%"
+    return spacer
+
+
 class CSSGapPicker(Picker):
     def __init__(self):
         super().__init__()
 
-        self.top = IntPicker()
-        self.left = IntPicker()
-        self.right = IntPicker()
-        self.bottom = IntPicker()
+        self.pickers = (IntPicker(), IntPicker(), IntPicker(), IntPicker())
+        (self.top, self.right, self.bottom, self.left) = self.pickers
+
         self.widget = Container(
-            Static(),
+            make_spacer(),
             self.top.widget,
-            Static(),
+            make_spacer(),
             self.left.widget,
-            Static(),
+            make_spacer(),
             self.right.widget,
-            Static(),
+            make_spacer(),
             self.bottom.widget,
-            Static(),
+            make_spacer(),
         )
         self.widget.styles.layout = "grid"
         self.widget.styles.grid_size_columns = 3
         self.widget.styles.grid_size_rows = 3
+        self.widget.styles.grid_columns = "1fr 1fr 1fr"
+        self.widget.styles.grid_rows = "1fr 1fr 1fr"
+
+        for picker in self.pickers:
+            picker.widget.styles.width = "100%"
 
     def get_value(self):
-        values = [x.get_value() for x in (self.top, self.right, self.bottom, self.left)]
+        values = [x.get_value() for x in self.pickers]
         if all(map(lambda x: x is None, values)):
             return None
 
