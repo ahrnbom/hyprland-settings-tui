@@ -9,6 +9,7 @@ def test_color_parsing():
         ("rgb(179,255,26)", "rgba(179,255,26,1.0)"),
         ("rgba(b3ff1aee)", "rgba(179,255,26,0.933)"),
         ("#fc770345", "rgba(252, 119, 3, 0.27  )"),
+        (0xEE1A1A1A, "3994688026"),
     ]
 
     for a, b in equivalent_pairs:

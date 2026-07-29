@@ -1,9 +1,10 @@
+from pathlib import Path
 from typing import Dict, List
 from hyprland_schema import Schema
 from hyprland_state import HyprlandState
 from textual.binding import Binding
 from textual.screen import Screen
-from textual.widgets import DataTable, Header, Label, TabPane, TabbedContent
+from textual.widgets import DataTable, Footer, Header, Label, TabPane, TabbedContent
 
 
 from hyprland_settings_tui.dialog import Dialog
@@ -26,6 +27,9 @@ class MainScreen(Screen):
     BINDINGS = [
         Binding("left", "prev_tab", "Previous Tab", priority=True),
         Binding("right", "next_tab", "Next Tab", priority=True),
+        Binding("ctrl+x", "save_exit", "Save pending changes and quit"),
+        Binding("ctrl+o", "save_now", "Save pending changes"),
+        Binding("ctrl+r", "revert", "Revert pending changes"),
     ]
     DEFAULT_CSS = """
         TabPane {
@@ -65,8 +69,12 @@ class MainScreen(Screen):
             for section in self.schema_sections:
                 yield self.make_table(section)
 
+        yield Footer()
+
     def make_table(self, section: str):
         table = DataTable(name=section, zebra_stripes=True, cursor_type="row")
+
+        # auto-generated keys didn't work here (some were None), so we set keys explicitly
         table.add_columns(*[(col, col) for col in COLUMNS])
 
         for opt in self.schema.get_section(section):
@@ -97,11 +105,18 @@ class MainScreen(Screen):
                 next_pane.query_one("*").focus()
                 break
 
-    def action_next_tab(self) -> None:
+    def action_next_tab(self):
         self.switch_tab(1)
 
-    def action_prev_tab(self) -> None:
+    def action_prev_tab(self):
         self.switch_tab(-1)
+
+    def action_save_exit(self):
+        if self.state.is_dirty():
+            # self.state.save()
+            # TODO this is buggy, writes .conf formatted instead of lua!
+            pass    
+        self.app.exit()
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
         if not event.row_key.value:

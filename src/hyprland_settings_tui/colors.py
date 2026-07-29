@@ -69,6 +69,17 @@ def pairwise(values: str):
 
 
 def parse_color(val: str | int, can_be_argb=True):
+    # hyprland-state can report integers as strings for some reason
+    if isinstance(val, str):
+        as_int: int | None = None
+        try:
+            as_int = int(val)
+        except (ValueError, TypeError):
+            pass
+
+        if as_int:
+            val = as_int
+
     if isinstance(val, int) and val < 0:
         return Color(0, 0, 0)
 
