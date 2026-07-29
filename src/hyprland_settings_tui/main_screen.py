@@ -9,6 +9,8 @@ from textual.widgets import DataTable, Header, Label, TabPane, TabbedContent
 from hyprland_settings_tui.dialog import Dialog
 from hyprland_settings_tui.setting import to_setting, Setting
 
+COLUMNS = ["Setting", "Status", "Value", "Default", "On disk", "Type", "Description"]
+
 
 def get_sections(schema: Schema):
     secs: List[str] = []
@@ -39,6 +41,7 @@ class MainScreen(Screen):
     def __init__(self, schema: Schema, state: HyprlandState):
         self.schema = schema
         self.state = state
+        self.current_setting: Setting | None = None
         super().__init__()
 
         self.title = "Hyprland Settings TUI"
@@ -47,7 +50,8 @@ class MainScreen(Screen):
         self.schema_sections = get_sections(self.schema)
         self.special_sections = ["monitors", "keybinds"]
 
-        self.row_data: Dict[str, Setting] = {}
+        self.settings: Dict[str, Setting] = {}
+        self.tables: Dict[str, DataTable] = {}
 
     def compose(self):
         header = Header(show_clock=True)
@@ -63,17 +67,17 @@ class MainScreen(Screen):
 
     def make_table(self, section: str):
         table = DataTable(name=section, zebra_stripes=True, cursor_type="row")
-        table.add_columns(
-            "Setting", "Status", "Value", "Default", "On disk", "Type", "Description"
-        )
+        table.add_columns(*[(col, col) for col in COLUMNS])
 
         for opt in self.schema.get_section(section):
-            row_data = to_setting(opt, self.state, section)
+            setting = to_setting(opt, self.state, section)
             key = f"{section}::{':'.join(opt.section)}::{opt.name}"
-            row_key = table.add_row(*row_data.row, key=key)
+            row_key = table.add_row(*setting.row, key=key)
             assert row_key.value
-            self.row_data[row_key.value] = row_data
+            setting.row_key = row_key.value
+            self.settings[row_key.value] = setting
 
+        self.tables[section] = table
         return table
 
     def make_special_section(self, section: str):
@@ -103,5 +107,26 @@ class MainScreen(Screen):
         if not event.row_key.value:
             return
 
-        row_data = self.row_data[event.row_key.value]
-        self.app.push_screen(Dialog(row_data))
+        setting = self.settings[event.row_key.value]
+        self.current_setting = setting
+        self.app.push_screen(Dialog(setting, self.state), self.setting_callback)
+
+    def setting_callback(self, value):
+        if self.current_setting is None:
+            raise ValueError(
+                f"Received callback from setting dialog, without a setting"
+            )
+
+        row_key = self.current_setting.row_key
+        section = self.current_setting.section
+        table = self.tables.get(section)
+        if table is None:
+            raise ValueError(f"Could not find data table for {section}")
+
+        self.current_setting.refresh(self.state)
+        for col_key, value in zip(COLUMNS, self.current_setting.row):
+            table.update_cell(
+                row_key=row_key, column_key=col_key, value=value, update_width=True
+            )
+
+        self.current_setting = None

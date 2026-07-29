@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import enum
 from functools import lru_cache
-from typing import List, Tuple
+from typing import Tuple
 from hyprland_state import HyprlandState
 from rich.text import Text
 from hyprland_schema import HyprOption
@@ -41,6 +41,8 @@ class Setting:
     value: int | float | str | bool | tuple | Gradient | None = None
     disk: str | None = None
     default: int | float | str | bool | tuple | Gradient | None = None
+    full_name: str = ""
+    row_key: str = ""
 
     @property
     def row(self):
@@ -53,6 +55,35 @@ class Setting:
             type_with_color(self.opt.type),
             self.opt.description,
         ]
+
+    def refresh(self, state: HyprlandState):
+        name = self.opt.name
+        if len(self.opt.section) > 1:
+            parts = list(self.opt.section[1:])
+            parts.append(name)
+            name = ":".join(parts)
+
+        self.name = name
+
+        self.full_name = self.section + ":" + name
+        value, avail = state.get_live(self.full_name)
+        if not avail:
+            self.status = Status.UNKNOWN
+            self.value = None
+            return
+        self.value = canonical_form(value, self.opt)
+
+        disk_value = state.get_disk(self.full_name)
+        self.disk = canonical_form(disk_value, self.opt)
+        self.default = canonical_form(self.opt.default, self.opt)
+
+        if is_similar(self.disk, self.value) or self.disk is None:
+            if is_similar(self.value, self.default):
+                self.status = Status.DEFAULT
+            else:
+                self.status = Status.CHANGED
+        else:
+            self.status = Status.PENDING
 
 
 def sanitize_string(x: str):
@@ -153,35 +184,7 @@ def is_similar(x, y):
 
 
 def to_setting(opt: HyprOption, state: HyprlandState, section: str):
-    setting = Setting(opt)
-
-    name = setting.opt.name
-    if len(setting.opt.section) > 1:
-        parts = list(setting.opt.section[1:])
-        parts.append(name)
-        name = ":".join(parts)
-
-    setting.name = name
-    setting.section = section
-
-    full_name = section + ":" + name
-    value, avail = state.get_live(full_name)
-    if not avail:
-        setting.status = Status.UNKNOWN
-        setting.value = None
-        return setting
-    setting.value = canonical_form(value, opt)
-
-    disk_value = state.get_disk(full_name)
-    setting.disk = canonical_form(disk_value, opt)
-    setting.default = canonical_form(opt.default, opt)
-
-    if is_similar(setting.disk, setting.value) or setting.disk is None:
-        if is_similar(setting.value, setting.default):
-            setting.status = Status.DEFAULT
-        else:
-            setting.status = Status.CHANGED
-    else:
-        setting.status = Status.PENDING
+    setting = Setting(opt, section=section)
+    setting.refresh(state)
 
     return setting

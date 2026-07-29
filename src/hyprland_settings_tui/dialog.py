@@ -1,3 +1,5 @@
+from hyprland_socket import CommandError
+from hyprland_state import HyprlandState
 from textual.binding import Binding
 from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
@@ -43,11 +45,12 @@ class Dialog(ModalScreen):
         Binding("left", "app.focus_previous", show=False),
     ]
 
-    def __init__(self, setting: Setting):
+    def __init__(self, setting: Setting, state: HyprlandState):
         super().__init__()
         self.setting = setting
         self.opt = setting.opt
         self.picker: Picker | None
+        self.state = state
 
     def compose(self):
         with Vertical(id="dialog-container"):
@@ -75,5 +78,20 @@ class Dialog(ModalScreen):
             )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        if "confirm" in event.button.id and self.picker is not None:
+            success: bool
+            value = self.picker.get_value()
+            try:
+                success = self.state.apply(self.setting.full_name, value)
+            except (ValueError, CommandError):
+                success = False
+
+            if success:
+                self.notify(f"Applied setting {self.setting.name} to {value}")
+            else:
+                self.notify(
+                    f"Failed to apply setting {self.setting.name}", severity="warning"
+                )
+
         if "close" in event.button.id:
-            self.dismiss()  # Closes the popup and returns to the app
+            self.dismiss()  # Closes the popup
