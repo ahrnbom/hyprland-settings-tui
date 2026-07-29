@@ -1,8 +1,8 @@
-from textual.containers import HorizontalGroup
+from textual.containers import HorizontalGroup, VerticalGroup
 from textual.widget import Widget
-from textual.widgets import Input, Static
+from textual.widgets import Input, Label, RadioButton, RadioSet, Rule, Static
 
-from hyprland_settings_tui.colors import parse_color
+from hyprland_settings_tui.colors import Gradient, parse_color
 from hyprland_settings_tui.setting import Setting
 
 
@@ -90,6 +90,51 @@ class ColorPicker(Picker):
             return parse_color(self.input.value)
 
 
+class GradientPicker(Picker):
+    def __init__(self):
+        super().__init__()
+
+        self.main_color_picker = ColorPicker()
+        self.second_color_picker = ColorPicker()
+        self.angle_picker = IntPicker()
+
+        self.widget = VerticalGroup(
+            Label("main color"),
+            self.main_color_picker.widget,
+            Rule(),
+            Label("secondary color (leave blank for solid)"),
+            self.second_color_picker.widget,
+            Rule(),
+            Label("gradient angle (degrees)"),
+            self.angle_picker.widget,
+        )
+
+    def get_value(self):
+        main_color = self.main_color_picker.get_value()
+        if main_color is None:
+            return None
+
+        second = self.second_color_picker.get_value()
+        angle = self.angle_picker.get_value() or 0
+
+        return Gradient(main_color=main_color, second_color=second, angle_deg=angle)
+
+
+class BoolPicker(Picker):
+    def __init__(self):
+        super().__init__()
+        self.widget = RadioSet("true", "false")
+        
+
+    def get_value(self):
+        assert isinstance(self.widget, RadioSet)
+        idx = self.widget.pressed_index
+        if idx < 0:
+            return None
+
+        return idx == 0
+
+
 def make_picker(setting: Setting):
     match setting.opt.type:
         case "int":
@@ -100,3 +145,7 @@ def make_picker(setting: Setting):
             return StringPicker()
         case "color":
             return ColorPicker()
+        case "gradient":
+            return GradientPicker()
+        case "bool":
+            return BoolPicker()

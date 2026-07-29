@@ -3,6 +3,7 @@ from typing import Optional
 
 from textual.color import Color as TextualColor
 
+
 @dataclass(frozen=True)
 class Color:
     r: int
@@ -78,11 +79,11 @@ def parse_color(val: str | int, can_be_argb=True):
     s = str(val).strip().lower()
 
     if s.endswith(")"):
-        col: Color | None = None 
+        col: Color | None = None
         if s.startswith("rgb("):
             ss = s.removeprefix("rgb(").removesuffix(")")
             col = parse_color(ss, can_be_argb=False)
-            
+
         if s.startswith("rgba("):
             ss = s.removeprefix("rgba(").removesuffix(")")
             col = parse_color(ss, can_be_argb=False)
