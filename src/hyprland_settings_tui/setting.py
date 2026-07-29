@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import enum
 from functools import lru_cache
-from typing import List
+from typing import List, Tuple
 from hyprland_state import HyprlandState
 from rich.text import Text
 from hyprland_schema import HyprOption
@@ -94,7 +94,7 @@ def as_float(x):
         return None
 
 
-def as_css_gap(x) -> List[int] | None:
+def as_css_gap(x) -> Tuple[int, ...] | None:
     if isinstance(x, str):
         x = [int(v) for v in x.strip().split(" ")]
 
@@ -102,24 +102,27 @@ def as_css_gap(x) -> List[int] | None:
         x = [x]
 
     if x is None:
-        x = []
+        x = tuple()
 
-    assert isinstance(x, list)
+    if isinstance(x, list):
+        x = tuple(x)
+
+    assert isinstance(x, tuple)
 
     if len(x) == 4:
         return x
 
     if len(x) == 3:
-        top, lr, bot = x
-        return [top, lr, bot, lr]
+        top, lr, bot = [int(v) for v in x]
+        return (top, lr, bot, lr)
 
     if len(x) == 2:
-        tb, lr = x
-        return [tb, lr, tb, lr]
+        tb, lr = [int(v) for v in x]
+        return (tb, lr, tb, lr)
 
     if len(x) == 1:
-        (tblr,) = x
-        return [tblr, tblr, tblr, tblr]
+        tblr = int(x[0])
+        return (tblr, tblr, tblr, tblr)
 
 
 def canonical_form(x, opt: HyprOption):

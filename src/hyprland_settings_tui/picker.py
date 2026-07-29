@@ -1,9 +1,29 @@
-from textual.containers import HorizontalGroup, VerticalGroup
+from hyprland_schema import HyprOption
+from textual.binding import Binding
+from textual.containers import Container, HorizontalGroup, VerticalGroup
 from textual.widget import Widget
-from textual.widgets import Input, Label, RadioButton, RadioSet, Rule, Static
+from textual.widgets import Input, Label, RadioSet, Rule, Static
 
 from hyprland_settings_tui.colors import Gradient, parse_color
 from hyprland_settings_tui.setting import Setting
+
+
+class LimitedFocusRadioSet(RadioSet, inherit_bindings=False):
+    BINDINGS = [
+        Binding(
+            "down",
+            "next_button",
+            "Next option",
+            show=False,
+        ),
+        Binding("enter,space", "toggle_button", "Toggle", show=False),
+        Binding(
+            "up",
+            "previous_button",
+            "Previous option",
+            show=False,
+        ),
+    ]
 
 
 class Picker:
@@ -21,6 +41,7 @@ class IntPicker(Picker):
     def __init__(self):
         super().__init__()
         self.widget = Input(type="integer")
+        self.widget.styles.width = "30%"
 
     def get_value(self):
         assert isinstance(self.widget, Input)
@@ -34,6 +55,7 @@ class FloatPicker(Picker):
     def __init__(self):
         super().__init__()
         self.widget = Input(type="number")
+        self.widget.styles.width = "30%"
 
     def get_value(self):
         assert isinstance(self.widget, Input)
@@ -47,6 +69,7 @@ class StringPicker(Picker):
     def __init__(self):
         super().__init__()
         self.widget = Input(type="text")
+        self.widget.styles.width = "90%"
 
     def get_value(self):
         assert isinstance(self.widget, Input)
@@ -123,16 +146,83 @@ class GradientPicker(Picker):
 class BoolPicker(Picker):
     def __init__(self):
         super().__init__()
-        self.widget = RadioSet("true", "false")
-        
+        self.widget = LimitedFocusRadioSet("true", "false")
+        self.widget.styles.width = "30%"
 
     def get_value(self):
-        assert isinstance(self.widget, RadioSet)
+        assert isinstance(self.widget, LimitedFocusRadioSet)
         idx = self.widget.pressed_index
         if idx < 0:
             return None
 
         return idx == 0
+
+
+class ChoicePicker(Picker):
+    def __init__(self, opt: HyprOption):
+        super().__init__()
+
+        assert opt.enum_values is not None
+        self.options = opt.enum_values
+
+        self.widget = LimitedFocusRadioSet(*self.options)
+        self.widget.styles.width = "50%"
+
+    def get_value(self):
+        assert isinstance(self.widget, LimitedFocusRadioSet)
+        if self.widget.pressed_index < 0:
+            return None
+        return self.options[self.widget.pressed_index]
+
+
+class Vec2Picker(Picker):
+    def __init__(self):
+        super().__init__()
+        self.x = FloatPicker()
+        self.y = FloatPicker()
+        self.widget = VerticalGroup(self.x.widget, self.y.widget)
+        self.widget.styles.width = "30%"
+
+    def get_value(self):
+        x = self.x.get_value()
+        y = self.y.get_value()
+
+        if x is None or y is None:
+            return None
+
+        return (x, y)
+
+
+class CSSGapPicker(Picker):
+    def __init__(self):
+        super().__init__()
+
+        self.top = IntPicker()
+        self.left = IntPicker()
+        self.right = IntPicker()
+        self.bottom = IntPicker()
+        self.widget = Container(
+            Static(),
+            self.top.widget,
+            Static(),
+            self.left.widget,
+            Static(),
+            self.right.widget,
+            Static(),
+            self.bottom.widget,
+            Static(),
+        )
+        self.widget.styles.layout = "grid"
+        self.widget.styles.grid_size_columns = 3
+        self.widget.styles.grid_size_rows = 3
+
+    def get_value(self):
+        values = [x.get_value() for x in (self.top, self.right, self.bottom, self.left)]
+        if all(map(lambda x: x is None, values)):
+            return None
+
+        values = tuple(map(lambda x: x or 0, values))
+        return values
 
 
 def make_picker(setting: Setting):
@@ -149,3 +239,11 @@ def make_picker(setting: Setting):
             return GradientPicker()
         case "bool":
             return BoolPicker()
+        case "choice":
+            return ChoicePicker(setting.opt)
+        case "vec2":
+            return Vec2Picker()
+        case "cssgap":
+            return CSSGapPicker()
+        case "font_weight":
+            return StringPicker()
