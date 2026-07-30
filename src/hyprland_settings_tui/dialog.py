@@ -81,8 +81,13 @@ class Dialog(ModalScreen):
         if "confirm" in event.button.id and self.picker is not None:
             success: bool
             value = self.picker.get_value()
+            validate = (
+                self.setting.opt.type != "choice"
+            )  # workaround for a bug in hyprland-state
             try:
-                success = self.state.apply(self.setting.full_name, value)
+                success = self.state.apply(
+                    self.setting.full_name, value, validate=validate
+                )
             except (ValueError, CommandError):
                 success = False
 

@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Dict, List
 from hyprland_config import default_entrypoint, serialize_lua
 from hyprland_schema import Schema
@@ -125,7 +124,7 @@ class MainScreen(Screen):
 
         self.state.save()
         self.reload_all_settings()
-        self.notify("Settings changed!")
+        self.notify("Settings saved to disk!")
 
     def action_revert(self):
         self.state.discard()

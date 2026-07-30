@@ -163,7 +163,7 @@ class ChoicePicker(Picker):
         super().__init__()
 
         assert opt.enum_values is not None
-        self.options = opt.enum_values
+        self.options = [f"{i}: {x}" for (i, x) in enumerate(opt.enum_values)]
 
         self.widget = LimitedFocusRadioSet(*self.options)
         self.widget.styles.width = "50%"
@@ -172,7 +172,7 @@ class ChoicePicker(Picker):
         assert isinstance(self.widget, LimitedFocusRadioSet)
         if self.widget.pressed_index < 0:
             return None
-        return self.options[self.widget.pressed_index]
+        return self.widget.pressed_index
 
 
 class Vec2Picker(Picker):
