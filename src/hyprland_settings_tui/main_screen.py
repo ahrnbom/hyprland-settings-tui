@@ -124,8 +124,13 @@ class MainScreen(Screen):
             return
 
         self.state.save()
+        self.reload_all_settings()
         self.notify("Settings changed!")
-        # TODO - reload tables
+
+    def action_revert(self):
+        self.state.discard()
+        self.reload_all_settings()
+        self.notify("Settings reverted!", severity="warning")
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
         if not event.row_key.value:
@@ -135,22 +140,27 @@ class MainScreen(Screen):
         self.current_setting = setting
         self.app.push_screen(Dialog(setting, self.state), self.setting_callback)
 
+    def reload_row_for_setting(self, setting: Setting):
+        row_key = setting.row_key
+        section = setting.section
+        table = self.tables.get(section)
+        if table is None:
+            raise ValueError(f"Could not find data table for {section}")
+
+        setting.refresh(self.state)
+        for col_key, value in zip(COLUMNS, setting.row):
+            table.update_cell(
+                row_key=row_key, column_key=col_key, value=value, update_width=True
+            )
+
+    def reload_all_settings(self):
+        for setting in self.settings.values():
+            self.reload_row_for_setting(setting)
+
     def setting_callback(self, value):
         if self.current_setting is None:
             raise ValueError(
                 f"Received callback from setting dialog, without a setting"
             )
-
-        row_key = self.current_setting.row_key
-        section = self.current_setting.section
-        table = self.tables.get(section)
-        if table is None:
-            raise ValueError(f"Could not find data table for {section}")
-
-        self.current_setting.refresh(self.state)
-        for col_key, value in zip(COLUMNS, self.current_setting.row):
-            table.update_cell(
-                row_key=row_key, column_key=col_key, value=value, update_width=True
-            )
-
+        self.reload_row_for_setting(self.current_setting)
         self.current_setting = None
