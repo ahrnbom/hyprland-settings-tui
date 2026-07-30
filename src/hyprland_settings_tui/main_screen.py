@@ -114,14 +114,18 @@ class MainScreen(Screen):
 
     def action_save_exit(self):
         if self.state.is_dirty():
-            # TODO state.save is buggy, writes .conf formatted instead of lua!
-            # This is a really hacky workaround, not sure about the state of state after this
-            for key, value in self.state._pending.items():
-                self.state.document.set(key, value)
-            as_lua = serialize_lua(self.state.document)
-            default_entrypoint().write_text(as_lua)
+            self.state.save()
 
         self.app.exit()
+
+    def action_save_now(self):
+        if not self.state.is_dirty():
+            self.notify("No pending changes!", severity="warning")
+            return
+
+        self.state.save()
+        self.notify("Settings changed!")
+        # TODO - reload tables
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
         if not event.row_key.value:

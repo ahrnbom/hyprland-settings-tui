@@ -5,7 +5,7 @@ description = "A TUI editor for hyprland.lua configs"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "hyprland-state~=0.4.3",
+    "hyprland-state>=0.4.4",
     "msgspec~=0.21.1",
     "textual~=8.2.8",
 ]
