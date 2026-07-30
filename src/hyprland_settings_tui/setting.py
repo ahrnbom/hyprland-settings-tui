@@ -160,20 +160,21 @@ def canonical_form(x, opt: HyprOption):
     if x is None:
         return None
 
-    if opt.type == "bool":
-        return as_bool(x)
-    elif opt.type == "int":
-        return as_int(x)
-    elif opt.type == "float":
-        return as_float(x)
-    elif opt.type == "color" or opt.type == "gradient":
-        return as_gradient(x)
-    elif opt.type == "vec2":
-        return as_vec2(x)
-    elif opt.type == "cssgap":
-        return as_css_gap(x)
-
-    return sanitize_string(x)
+    match opt.type:
+        case "bool":
+            return as_bool(x)
+        case "int" | "choice":
+            return as_int(x)
+        case "float":
+            return as_float(x)
+        case "color" | "gradient":
+            return as_gradient(x)
+        case "vec2":
+            return as_vec2(x)
+        case "cssgap":
+            return as_css_gap(x)
+        case _:
+            return sanitize_string(x)
 
 
 def is_similar(x, y):
