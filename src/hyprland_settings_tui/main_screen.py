@@ -8,6 +8,7 @@ from textual.widgets import DataTable, Footer, Header, Label, TabPane, TabbedCon
 
 
 from hyprland_settings_tui.dialog import Dialog
+from hyprland_settings_tui.keybinds import KeybindsEditor
 from hyprland_settings_tui.setting import to_setting, Setting
 
 COLUMNS = ["Setting", "Status", "Value", "Default", "On disk", "Type", "Description"]
@@ -89,7 +90,11 @@ class MainScreen(Screen):
         return table
 
     def make_special_section(self, section: str):
-        return Label(section)
+        match section:
+            case "keybinds":
+                return KeybindsEditor().widget
+            case _:
+                return Label(section)
 
     def switch_tab(self, delta: int) -> None:
         tabbed_content = self.query_one(TabbedContent)
