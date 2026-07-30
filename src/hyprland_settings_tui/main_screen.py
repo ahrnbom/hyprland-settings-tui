@@ -1,5 +1,4 @@
 from typing import Dict, List
-from hyprland_config import default_entrypoint, serialize_lua
 from hyprland_schema import Schema
 from hyprland_state import HyprlandState
 from textual.binding import Binding
@@ -8,7 +7,7 @@ from textual.widgets import DataTable, Footer, Header, Label, TabPane, TabbedCon
 
 
 from hyprland_settings_tui.dialog import Dialog
-from hyprland_settings_tui.keybinds import KeybindsEditor
+from hyprland_settings_tui.keybinds import make_keybinds_table
 from hyprland_settings_tui.setting import to_setting, Setting
 
 COLUMNS = ["Setting", "Status", "Value", "Default", "On disk", "Type", "Description"]
@@ -92,7 +91,7 @@ class MainScreen(Screen):
     def make_special_section(self, section: str):
         match section:
             case "keybinds":
-                return KeybindsEditor().widget
+                return make_keybinds_table()
             case _:
                 return Label(section)
 
@@ -140,9 +139,10 @@ class MainScreen(Screen):
         if not event.row_key.value:
             return
 
-        setting = self.settings[event.row_key.value]
-        self.current_setting = setting
-        self.app.push_screen(Dialog(setting, self.state), self.setting_callback)
+        if event.data_table.name in self.schema_sections:
+            setting = self.settings[event.row_key.value]
+            self.current_setting = setting
+            self.app.push_screen(Dialog(setting, self.state), self.setting_callback)
 
     def reload_row_for_setting(self, setting: Setting):
         row_key = setting.row_key
