@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from uuid import uuid4
-from hyprland_config import Assignment, load_lua, default_lua_entrypoint
+from hyprland_config import Assignment
+from hyprland_state import HyprlandState
 from textual.widgets import DataTable
 
 COLUMNS = ["Keys", "Action", "Comment"]
@@ -41,9 +42,8 @@ class Keybind:
         )
 
 
-def make_keybinds_table():
-    path = default_lua_entrypoint()
-    config = load_lua(path)
+def make_keybinds_table(state: HyprlandState):
+    config = state.document
 
     table = DataTable(name="keybinds", zebra_stripes=True, cursor_type="row")
     table.add_columns(*[(col, col) for col in COLUMNS])

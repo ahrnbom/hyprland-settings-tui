@@ -91,7 +91,7 @@ class MainScreen(Screen):
     def make_special_section(self, section: str):
         match section:
             case "keybinds":
-                return make_keybinds_table()
+                return make_keybinds_table(self.state)
             case _:
                 return Label(section)
 
