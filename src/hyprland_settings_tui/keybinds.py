@@ -1,10 +1,14 @@
 from dataclasses import dataclass
+from typing import Dict
 from uuid import uuid4
 from hyprland_config import Assignment
 from hyprland_state import HyprlandState
+from textual.screen import ModalScreen
 from textual.widgets import DataTable
+from rich.text import Text
 
-COLUMNS = ["Keys", "Action", "Comment"]
+COLUMNS = ["Keys", "Action"]
+NEW_KEYBIND_ROW_KEY = "<NEW_KEYBIND>"
 
 
 @dataclass
@@ -13,7 +17,6 @@ class Keybind:
     button: str = ""
     command: str = ""
     argument: str = ""
-    comment: str = ""
     row_key: str = ""
 
     @classmethod
@@ -38,23 +41,41 @@ class Keybind:
         return (
             self.key_combo,
             f"{self.command}: {self.argument}",
-            self.comment,
         )
 
 
-def make_keybinds_table(state: HyprlandState):
-    config = state.document
+class KeybindManager:
+    def __init__(self, state: HyprlandState):
+        self.keybinds: Dict[str, Keybind] = {}
 
-    table = DataTable(name="keybinds", zebra_stripes=True, cursor_type="row")
-    table.add_columns(*[(col, col) for col in COLUMNS])
+        config = state.document
 
-    for bind in config.find_all("bind"):
-        if isinstance(bind, Assignment):
-            continue
+        table = DataTable(name="keybinds", zebra_stripes=True, cursor_type="row")
+        table.add_columns(*[(col, col) for col in COLUMNS])
 
-        keybind = Keybind.from_bind_value(bind.value)
-        keybind.comment = bind.inline_comment
-        keybind.row_key = f"keybinds::{uuid4()}"
-        table.add_row(*keybind.row, key=keybind.row_key)
+        state.get_binds()
 
-    return table
+        for bind in config.find_all("bind"):
+            if isinstance(bind, Assignment):
+                continue
+
+            keybind = Keybind.from_bind_value(bind.value)
+            keybind.row_key = f"keybinds::{uuid4()}"
+            self.keybinds[keybind.row_key] = keybind
+            table.add_row(*keybind.row, key=keybind.row_key)
+
+        # Final "add a new keybind" row
+        new_text = Text(" < new > ", style="yellow")
+        table.add_row(new_text, new_text, key=NEW_KEYBIND_ROW_KEY)
+
+        self.table = table
+
+    def make_dialog(self, row_key: str) -> ModalScreen | None:
+        kb = self.keybinds.get(row_key)
+        if not kb:
+            return None
+
+        # TODO make the actual dialog and return it
+
+    def dialog_exit_callback(self, _):
+        pass

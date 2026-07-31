@@ -7,7 +7,7 @@ from textual.widgets import DataTable, Footer, Header, Label, TabPane, TabbedCon
 
 
 from hyprland_settings_tui.dialog import Dialog
-from hyprland_settings_tui.keybinds import make_keybinds_table
+from hyprland_settings_tui.keybinds import KeybindManager
 from hyprland_settings_tui.setting import to_setting, Setting
 
 COLUMNS = ["Setting", "Status", "Value", "Default", "On disk", "Type", "Description"]
@@ -57,6 +57,8 @@ class MainScreen(Screen):
         self.settings: Dict[str, Setting] = {}
         self.tables: Dict[str, DataTable] = {}
 
+        self.keybinds = KeybindManager(state)
+
     def compose(self):
         header = Header(show_clock=True)
         header.icon = "🔥"
@@ -91,7 +93,7 @@ class MainScreen(Screen):
     def make_special_section(self, section: str):
         match section:
             case "keybinds":
-                return make_keybinds_table(self.state)
+                return self.keybinds.table
             case _:
                 return Label(section)
 
@@ -143,6 +145,10 @@ class MainScreen(Screen):
             setting = self.settings[event.row_key.value]
             self.current_setting = setting
             self.app.push_screen(Dialog(setting, self.state), self.setting_callback)
+        elif event.data_table.name == "keybinds":
+            dia = self.keybinds.make_dialog(event.row_key.value)
+            if dia:
+                self.app.push_screen(dia, self.keybinds.dialog_exit_callback)
 
     def reload_row_for_setting(self, setting: Setting):
         row_key = setting.row_key
@@ -161,7 +167,7 @@ class MainScreen(Screen):
         for setting in self.settings.values():
             self.reload_row_for_setting(setting)
 
-    def setting_callback(self, value):
+    def setting_callback(self, _):
         if self.current_setting is None:
             raise ValueError(
                 f"Received callback from setting dialog, without a setting"
