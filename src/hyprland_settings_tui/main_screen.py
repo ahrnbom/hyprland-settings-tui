@@ -187,3 +187,5 @@ class MainScreen(Screen):
         for err in keybind_errors:
             self.notify(err, severity="warning")
         keybind_errors.clear()
+
+        self.keybinds.refresh_table()

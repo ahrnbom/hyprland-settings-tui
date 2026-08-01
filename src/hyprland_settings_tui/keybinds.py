@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Dict, List
+import enum
+from typing import Dict, List, Literal
 from uuid import uuid4
 from hyprland_config import Assignment
 from hyprland_state import HyprlandState
@@ -18,7 +19,7 @@ from textual.widgets import (
 )
 from rich.text import Text
 
-COLUMNS = ["Keys", "Action"]
+COLUMNS = ["Keys", "Action", "Status"]
 NEW_KEYBIND_ROW_KEY = "<NEW_KEYBIND>"
 MODIFIERS = ["ctrl", "alt", "shift", "super"]
 ACTION_TYPES = ["hyprland command", "shell command", "flatpak run", "noctalia command"]
@@ -43,6 +44,11 @@ HYPRLAND_COMMANDS = [
 keybind_errors: List[str] = []
 
 
+class Status(enum.Enum):
+    SAVED = Text("Saved", style="bright_blue")
+    PENDING = Text("pending", style="yellow")
+
+
 @dataclass
 class Keybind:
     modifier: str = ""
@@ -50,6 +56,7 @@ class Keybind:
     command: str = ""
     argument: str = ""
     row_key: str = ""
+    status: Status = Status.SAVED
 
     @classmethod
     def from_bind_value(cls, val: str):
@@ -70,10 +77,7 @@ class Keybind:
 
     @property
     def row(self):
-        return (
-            self.key_combo,
-            f"{self.command}: {self.argument}",
-        )
+        return (self.key_combo, f"{self.command}: {self.argument}", self.status)
 
     @property
     def conf_style(self):
@@ -192,8 +196,13 @@ class KeybindManager:
         self.config = state.document
         self.current_keybind: Keybind | None = None
 
-        table = DataTable(name="keybinds", zebra_stripes=True, cursor_type="row")
-        table.add_columns(*[(col, col) for col in COLUMNS])
+        self.table = DataTable(name="keybinds", zebra_stripes=True, cursor_type="row")
+        self.table.add_columns(*[(col, col) for col in COLUMNS])
+        self.refresh_table()
+
+    def refresh_table(self):
+        for key in list(self.table.rows.keys()):
+            self.table.remove_row(key)
 
         for bind in self.config.find_all("bind"):
             if isinstance(bind, Assignment):
@@ -202,13 +211,11 @@ class KeybindManager:
             keybind = Keybind.from_bind_value(bind.value)
             keybind.row_key = f"keybinds::{uuid4()}"
             self.keybinds[keybind.row_key] = keybind
-            table.add_row(*keybind.row, key=keybind.row_key)
+            self.table.add_row(*keybind.row, key=keybind.row_key)
 
         # Final "add a new keybind" row
         new_text = Text(" < new > ", style="yellow")
-        table.add_row(new_text, new_text, key=NEW_KEYBIND_ROW_KEY)
-
-        self.table = table
+        self.table.add_row(new_text, new_text, key=NEW_KEYBIND_ROW_KEY)
 
     def make_dialog(self, row_key: str) -> ModalScreen | None:
         kb = self.keybinds.get(row_key)
