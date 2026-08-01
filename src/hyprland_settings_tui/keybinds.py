@@ -43,19 +43,24 @@ class Keybind:
             f"{self.command}: {self.argument}",
         )
 
+    @property
+    def conf_style(self):
+        stuff = [self.modifier, self.button, self.command]
+        if self.argument:
+            stuff.append(self.argument)
+        return ",".join(stuff)
+
 
 class KeybindManager:
     def __init__(self, state: HyprlandState):
         self.keybinds: Dict[str, Keybind] = {}
-
-        config = state.document
+        self.state = state
+        self.config = state.document
 
         table = DataTable(name="keybinds", zebra_stripes=True, cursor_type="row")
         table.add_columns(*[(col, col) for col in COLUMNS])
 
-        state.get_binds()
-
-        for bind in config.find_all("bind"):
+        for bind in self.config.find_all("bind"):
             if isinstance(bind, Assignment):
                 continue
 
@@ -76,6 +81,9 @@ class KeybindManager:
             return None
 
         # TODO make the actual dialog and return it
+
+    def apply_keybind(self, kb: Keybind):
+        self.config.set("bind", kb.conf_style)
 
     def dialog_exit_callback(self, _):
         pass

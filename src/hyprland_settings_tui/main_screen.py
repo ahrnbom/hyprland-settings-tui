@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Dict, List
 from hyprland_schema import Schema
 from hyprland_state import HyprlandState
@@ -117,23 +118,29 @@ class MainScreen(Screen):
     def action_prev_tab(self):
         self.switch_tab(-1)
 
-    def action_save_exit(self):
-        if self.state.is_dirty():
-            self.state.save()
+    def save(self):
+        saved = self.state.save()
+        if self.state.document.dirty:
+            self.state.document.save()
+            saved.append(
+                Path.home()
+            )  # document.save() doesn't tell you if it saved something, let's just add something for our bool output
+        self.reload_all_settings()
+        return len(saved) > 0
 
+    def action_save_exit(self):
+        self.save()
         self.app.exit()
 
     def action_save_now(self):
-        if not self.state.is_dirty():
+        if self.save():
+            self.notify("Settings saved to disk!")
+        else:
             self.notify("No pending changes!", severity="warning")
-            return
-
-        self.state.save()
-        self.reload_all_settings()
-        self.notify("Settings saved to disk!")
 
     def action_revert(self):
         self.state.discard()
+        self.state.reload_config()
         self.reload_all_settings()
         self.notify("Settings reverted!", severity="warning")
 
