@@ -239,10 +239,11 @@ class KeybindDialog(ModalScreen):
 
         if "autoconfig" in event.button.id:
             options: List[str] = []
+            infos: List[str] = []
             if "noctalia" in event.button.id:
-                options = find_noctalia_commands()
+                options, infos = find_noctalia_commands()
             elif "flatpak" in event.button.id:
-                options = find_flatpak_commands()
+                options, infos = find_flatpak_commands()
 
             # TODO do something with them!
             if options:
