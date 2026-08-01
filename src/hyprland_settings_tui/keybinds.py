@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List
 from uuid import uuid4
 from hyprland_config import Assignment
@@ -43,13 +43,17 @@ HYPRLAND_COMMANDS = [
 keybind_errors: List[str] = []
 
 
+def get_random_row_key():
+    return f"keybinds::{uuid4()}"
+
+
 @dataclass
 class Keybind:
     modifier: str = ""
     button: str = ""
     command: str = ""
     argument: str = ""
-    row_key: str = ""
+    row_key: str = field(default_factory=get_random_row_key)
 
     @classmethod
     def from_bind_value(cls, val: str):
@@ -166,29 +170,31 @@ class KeybindDialog(ModalScreen):
 
         if not button or not modifier:
             keybind_errors.append("No button/modifier")
-            return
+            return False
 
         cmd = self.cmd_select.value
         if isinstance(cmd, NoSelection):
             keybind_errors.append("No hyprland command selected")
-            return
+            return False
 
         arg = self.arg_input.value
         if any(["," in x for x in (button, arg)]):
             keybind_errors.append("Commas are not supported at the moment, sorry :/")
-            return
+            return False
 
         self.kb.argument = arg
         self.kb.command = cmd
         self.kb.modifier = modifier
         self.kb.button = button
+        return True
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        success = False
         if "confirm" in event.button.id:
-            self.update_keybind()
+            success = self.update_keybind()
 
         if "close" in event.button.id:
-            self.dismiss()  # Closes the popup
+            self.dismiss(success)  # Closes the popup
 
 
 class KeybindManager:
@@ -211,7 +217,6 @@ class KeybindManager:
                 continue
 
             keybind = Keybind.from_bind_value(bind.value)
-            keybind.row_key = f"keybinds::{uuid4()}"
             self.keybinds[keybind.row_key] = keybind
             self.table.add_row(*keybind.row, key=keybind.row_key)
 
@@ -228,15 +233,21 @@ class KeybindManager:
         return KeybindDialog(kb)
 
     def apply_keybind(self, kb: Keybind):
-        if kb:
-            self.config.append("bind", kb.conf_style)
-            self.config.save()
+        if not kb:
+            return
+
+        if kb.row_key in self.keybinds:
+            self.config.remove_where("bind", lambda args: args == kb.conf_style)
+
+        self.config.append("bind", kb.conf_style)
+        self.config.save()
         self.refresh_table()
 
-    def dialog_exit_callback(self):
+    def dialog_exit_callback(self, result: bool):
         if self.current_keybind is None:
             keybind_errors.append("No keybind!")
             return
 
-        self.apply_keybind(self.current_keybind)
+        if result:
+            self.apply_keybind(self.current_keybind)
         self.current_keybind = None

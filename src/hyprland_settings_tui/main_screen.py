@@ -120,13 +120,12 @@ class MainScreen(Screen):
 
     def save(self):
         saved = self.state.save()
+        saved_something = len(saved) > 0
         if self.state.document.dirty:
             self.state.document.save()
-            saved.append(
-                Path.home()
-            )  # document.save() doesn't tell you if it saved something, let's just add something for our bool output
+            saved_something = True
         self.reload_all_settings()
-        return len(saved) > 0
+        return saved_something
 
     def action_save_exit(self):
         self.save()
@@ -182,8 +181,8 @@ class MainScreen(Screen):
         self.reload_row_for_setting(self.current_setting)
         self.current_setting = None
 
-    def keybinds_callback(self, _):
-        self.keybinds.dialog_exit_callback()
+    def keybinds_callback(self, result):
+        self.keybinds.dialog_exit_callback(result)
         for err in keybind_errors:
             self.notify(err, severity="warning")
         keybind_errors.clear()
