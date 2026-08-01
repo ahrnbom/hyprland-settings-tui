@@ -172,8 +172,16 @@ class KeybindDialog(ModalScreen):
 
             yield HorizontalGroup(self.cmd_select, self.arg_input)
             yield HorizontalGroup(
-                Button("autoconfig: flatpak run", id="autoconfig-flatpak"),
-                Button("autoconfig: noctalia command", id="autoconfig-noctalia"),
+                Button(
+                    "autoconfig: flatpak run",
+                    id="autoconfig-flatpak",
+                    variant="primary",
+                ),
+                Button(
+                    "autoconfig: noctalia command",
+                    id="autoconfig-noctalia",
+                    variant="primary",
+                ),
             )
 
             yield Rule()
@@ -222,7 +230,18 @@ class KeybindDialog(ModalScreen):
             self.dismiss(
                 out
             )  # Closes the popup, with return value provided to callback
+            return 
+        
+        if "autoconfig" in event.button.id:
+            options: List[str] = []
+            if "noctalia" in event.button.id:
+                options = find_noctalia_commands()
+            elif "flatpak" in event.button.id:
+                options = find_flatpak_commands()
 
+            # TODO do something with them!
+            if options:
+                keybind_errors.append("\n".join(options))
 
 class KeybindManager:
     def __init__(self, state: HyprlandState):
