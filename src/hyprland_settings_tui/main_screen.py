@@ -8,7 +8,7 @@ from textual.widgets import DataTable, Footer, Header, Label, TabPane, TabbedCon
 
 
 from hyprland_settings_tui.dialog import Dialog
-from hyprland_settings_tui.keybinds import KeybindManager
+from hyprland_settings_tui.keybinds import KeybindManager, keybind_errors
 from hyprland_settings_tui.setting import to_setting, Setting
 
 COLUMNS = ["Setting", "Status", "Value", "Default", "On disk", "Type", "Description"]
@@ -155,7 +155,7 @@ class MainScreen(Screen):
         elif event.data_table.name == "keybinds":
             dia = self.keybinds.make_dialog(event.row_key.value)
             if dia:
-                self.app.push_screen(dia, self.keybinds.dialog_exit_callback)
+                self.app.push_screen(dia, self.keybinds_callback)
 
     def reload_row_for_setting(self, setting: Setting):
         row_key = setting.row_key
@@ -181,3 +181,9 @@ class MainScreen(Screen):
             )
         self.reload_row_for_setting(self.current_setting)
         self.current_setting = None
+
+    def keybinds_callback(self, _):
+        self.keybinds.dialog_exit_callback()
+        for err in keybind_errors:
+            self.notify(err, severity="warning")
+        keybind_errors.clear()

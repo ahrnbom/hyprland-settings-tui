@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, List
 from uuid import uuid4
 from hyprland_config import Assignment
 from hyprland_state import HyprlandState
 from textual.binding import Binding
 from textual.containers import HorizontalGroup, VerticalScroll
 from textual.screen import ModalScreen
+from textual.types import NoSelection
 from textual.widgets import (
     Button,
     DataTable,
@@ -14,17 +15,15 @@ from textual.widgets import (
     Rule,
     Select,
     SelectionList,
-    TabbedContent,
 )
 from rich.text import Text
-
-from hyprland_settings_tui.widgets import LimitedFocusRadioSet
 
 COLUMNS = ["Keys", "Action"]
 NEW_KEYBIND_ROW_KEY = "<NEW_KEYBIND>"
 MODIFIERS = ["ctrl", "alt", "shift", "super"]
 ACTION_TYPES = ["hyprland command", "shell command", "flatpak run", "noctalia command"]
 HYPRLAND_COMMANDS = [
+    "exec",
     "killactive",
     "togglefloating",
     "movefocus",
@@ -40,6 +39,8 @@ HYPRLAND_COMMANDS = [
     "tagwindow",
     "layoutmsg",
 ]
+
+keybind_errors: List[str] = []
 
 
 @dataclass
@@ -98,6 +99,10 @@ class KeybindDialog(ModalScreen):
         align: center middle;
     }
     
+    Input {
+        max-width: 50%
+    }
+
     Button {
         margin: 1 4;
     }
@@ -123,7 +128,10 @@ class KeybindDialog(ModalScreen):
         self.kb = kb
 
         self.modifiers = SelectionList(*[(v, v) for v in MODIFIERS])
-        self.action_type_picker = LimitedFocusRadioSet(*ACTION_TYPES)
+        self.button_input = Input()
+
+        self.cmd_select = Select([(v, v) for v in HYPRLAND_COMMANDS])
+        self.arg_input = Input(placeholder="command/argument")
 
     def compose(self):
         with VerticalScroll(id="dialog-container"):
@@ -131,15 +139,17 @@ class KeybindDialog(ModalScreen):
             yield self.modifiers
 
             yield Label("Button")
-            yield Input()
+            yield self.button_input
 
             yield Rule()
 
-            with TabbedContent(*ACTION_TYPES):
-                yield Select([(c, c) for c in HYPRLAND_COMMANDS])
-                yield Input(placeholder="shell command")
-                yield Select([("flatpaks here", "flatpaks here")])
-                yield Select([("todo", "todo"), ("whatever", "whatever")])
+            yield HorizontalGroup(self.cmd_select, self.arg_input)
+            yield HorizontalGroup(
+                Button("autoconfig: flatpak run", id="autoconfig-flatpak"),
+                Button("autoconfig: noctalia command", id="autoconfig-noctalia"),
+            )
+
+            yield Rule()
 
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),
@@ -147,9 +157,29 @@ class KeybindDialog(ModalScreen):
                 id="bottom-buttons",
             )
 
+    def update_keybind(self):
+        modifier = " ".join(self.modifiers.selected)
+        button = self.button_input.value
+
+        if not button or not modifier:
+            keybind_errors.append("No button/modifier")
+            return
+
+        cmd = self.cmd_select.value
+        if isinstance(cmd, NoSelection):
+            keybind_errors.append("No hyprland command selected")
+            return
+
+        arg = self.arg_input.value
+
+        self.kb.argument = arg
+        self.kb.command = cmd
+        self.kb.modifier = modifier
+        self.kb.button = button
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if "confirm" in event.button.id:
-            pass
+            self.update_keybind()
 
         if "close" in event.button.id:
             self.dismiss()  # Closes the popup
@@ -160,6 +190,7 @@ class KeybindManager:
         self.keybinds: Dict[str, Keybind] = {}
         self.state = state
         self.config = state.document
+        self.current_keybind: Keybind | None = None
 
         table = DataTable(name="keybinds", zebra_stripes=True, cursor_type="row")
         table.add_columns(*[(col, col) for col in COLUMNS])
@@ -182,12 +213,18 @@ class KeybindManager:
     def make_dialog(self, row_key: str) -> ModalScreen | None:
         kb = self.keybinds.get(row_key)
         if not kb:
-            return None
+            kb = Keybind()
 
+        self.current_keybind = kb
         return KeybindDialog(kb)
 
     def apply_keybind(self, kb: Keybind):
         self.config.set("bind", kb.conf_style)
 
-    def dialog_exit_callback(self, _):
-        pass
+    def dialog_exit_callback(self):
+        if self.current_keybind is None:
+            keybind_errors.append("No keybind!")
+            return
+
+        self.apply_keybind(self.current_keybind)
+        self.current_keybind = None
