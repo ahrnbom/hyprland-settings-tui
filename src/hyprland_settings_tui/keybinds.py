@@ -19,6 +19,11 @@ from textual.widgets import (
 )
 from rich.text import Text
 
+from hyprland_settings_tui.find_commands import (
+    find_flatpak_commands,
+    find_noctalia_commands,
+)
+
 COLUMNS = ["Keys", "Action", "Status"]
 NEW_KEYBIND_ROW_KEY = "<NEW_KEYBIND>"
 MODIFIERS = ["ctrl", "alt", "shift", "super"]
@@ -230,8 +235,8 @@ class KeybindDialog(ModalScreen):
             self.dismiss(
                 out
             )  # Closes the popup, with return value provided to callback
-            return 
-        
+            return
+
         if "autoconfig" in event.button.id:
             options: List[str] = []
             if "noctalia" in event.button.id:
@@ -242,6 +247,7 @@ class KeybindDialog(ModalScreen):
             # TODO do something with them!
             if options:
                 keybind_errors.append("\n".join(options))
+
 
 class KeybindManager:
     def __init__(self, state: HyprlandState):
