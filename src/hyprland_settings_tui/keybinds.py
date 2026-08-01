@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-import enum
-from typing import Dict, List, Literal
+from typing import Dict, List
 from uuid import uuid4
 from hyprland_config import Assignment
 from hyprland_state import HyprlandState
@@ -44,11 +43,6 @@ HYPRLAND_COMMANDS = [
 keybind_errors: List[str] = []
 
 
-class Status(enum.Enum):
-    SAVED = Text("Saved", style="bright_blue")
-    PENDING = Text("pending", style="yellow")
-
-
 @dataclass
 class Keybind:
     modifier: str = ""
@@ -56,7 +50,6 @@ class Keybind:
     command: str = ""
     argument: str = ""
     row_key: str = ""
-    status: Status = Status.SAVED
 
     @classmethod
     def from_bind_value(cls, val: str):
@@ -77,7 +70,7 @@ class Keybind:
 
     @property
     def row(self):
-        return (self.key_combo, f"{self.command}: {self.argument}", self.status)
+        return (self.key_combo, f"{self.command}: {self.argument}")
 
     @property
     def conf_style(self):
@@ -85,6 +78,12 @@ class Keybind:
         if self.argument:
             stuff.append(self.argument)
         return ",".join(stuff)
+
+    def __bool__(self):
+        if (not self.command) or (not self.button):
+            return False
+
+        return True
 
 
 class KeybindDialog(ModalScreen):
@@ -175,6 +174,9 @@ class KeybindDialog(ModalScreen):
             return
 
         arg = self.arg_input.value
+        if any(["," in x for x in (button, arg)]):
+            keybind_errors.append("Commas are not supported at the moment, sorry :/")
+            return
 
         self.kb.argument = arg
         self.kb.command = cmd
@@ -226,7 +228,10 @@ class KeybindManager:
         return KeybindDialog(kb)
 
     def apply_keybind(self, kb: Keybind):
-        self.config.set("bind", kb.conf_style)
+        if kb:
+            self.config.append("bind", kb.conf_style)
+            self.config.save()
+        self.refresh_table()
 
     def dialog_exit_callback(self):
         if self.current_keybind is None:
