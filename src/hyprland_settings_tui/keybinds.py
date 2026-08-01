@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import enum
 from typing import Dict, List
 from uuid import uuid4
 from hyprland_config import Assignment
@@ -41,6 +42,12 @@ HYPRLAND_COMMANDS = [
 ]
 
 keybind_errors: List[str] = []
+
+
+class KeybindResult(enum.Enum):
+    SUCCESS = enum.auto()
+    IGNORE = enum.auto()
+    REMOVE = enum.auto()
 
 
 def get_random_row_key():
@@ -88,6 +95,19 @@ class Keybind:
             return False
 
         return True
+
+    def matches(self, args: str):
+        """
+        This doesn't handle exactly every case right now, but you gotta start somewhere.
+        Tries to determine if a keybind matches the "args" as they appear in the config document
+        """
+        canon_args = [x.strip().lower() for x in args.split(",")]
+        return all(
+            [
+                x.strip().lower() in canon_args
+                for x in (self.argument, self.button, self.modifier, self.command)
+            ]
+        )
 
 
 class KeybindDialog(ModalScreen):
@@ -160,7 +180,8 @@ class KeybindDialog(ModalScreen):
 
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),
-                Button("Cancel", id="cancel-close", variant="error"),
+                Button("Cancel", id="cancel-close", variant="warning"),
+                Button("Remove", id="remove-close", variant="error"),
                 id="bottom-buttons",
             )
 
@@ -189,12 +210,18 @@ class KeybindDialog(ModalScreen):
         return True
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        success = False
+        out: KeybindResult = KeybindResult.IGNORE
         if "confirm" in event.button.id:
             success = self.update_keybind()
+            if success:
+                out = KeybindResult.SUCCESS
+        elif "remove" in event.button.id:
+            out = KeybindResult.REMOVE
 
         if "close" in event.button.id:
-            self.dismiss(success)  # Closes the popup
+            self.dismiss(
+                out
+            )  # Closes the popup, with return value provided to callback
 
 
 class KeybindManager:
@@ -237,17 +264,23 @@ class KeybindManager:
             return
 
         if kb.row_key in self.keybinds:
-            self.config.remove_where("bind", lambda args: args == kb.conf_style)
+            self.config.remove_where("bind", lambda args: kb.matches(args))
 
         self.config.append("bind", kb.conf_style)
         self.config.save()
         self.refresh_table()
 
-    def dialog_exit_callback(self, result: bool):
+    def remove_keybind(self, kb: Keybind):
+        self.config.remove_where("bind", lambda args: kb.matches(args))
+
+    def dialog_exit_callback(self, result: KeybindResult):
         if self.current_keybind is None:
             keybind_errors.append("No keybind!")
             return
 
-        if result:
+        if result == KeybindResult.SUCCESS:
             self.apply_keybind(self.current_keybind)
+        elif result == KeybindResult.REMOVE:
+            self.remove_keybind(self.current_keybind)
+
         self.current_keybind = None

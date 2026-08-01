@@ -73,7 +73,7 @@ class Dialog(ModalScreen):
 
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),
-                Button("Cancel", id="cancel-close", variant="error"),
+                Button("Cancel", id="cancel-close", variant="warning"),
                 id="bottom-buttons",
             )
 
