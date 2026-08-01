@@ -3,12 +3,43 @@ from typing import Dict
 from uuid import uuid4
 from hyprland_config import Assignment
 from hyprland_state import HyprlandState
+from textual.binding import Binding
+from textual.containers import HorizontalGroup, VerticalScroll
 from textual.screen import ModalScreen
-from textual.widgets import DataTable
+from textual.widgets import (
+    Button,
+    DataTable,
+    Input,
+    Label,
+    Rule,
+    Select,
+    SelectionList,
+    TabbedContent,
+)
 from rich.text import Text
+
+from hyprland_settings_tui.widgets import LimitedFocusRadioSet
 
 COLUMNS = ["Keys", "Action"]
 NEW_KEYBIND_ROW_KEY = "<NEW_KEYBIND>"
+MODIFIERS = ["ctrl", "alt", "shift", "super"]
+ACTION_TYPES = ["hyprland command", "shell command", "flatpak run", "noctalia command"]
+HYPRLAND_COMMANDS = [
+    "killactive",
+    "togglefloating",
+    "movefocus",
+    "workspace",
+    "movetoworkspace",
+    "togglespecialworkspace",
+    "changegroupactive",
+    "moveintogroup",
+    "moveoutofgroup",
+    "resizeactive",
+    "setprop",
+    "swapwindow",
+    "tagwindow",
+    "layoutmsg",
+]
 
 
 @dataclass
@@ -51,6 +82,79 @@ class Keybind:
         return ",".join(stuff)
 
 
+class KeybindDialog(ModalScreen):
+    DEFAULT_CSS = """
+    KeybindDialog {
+        align: center middle;
+        background: rgba(0, 0, 0, 0.5); /* Dims the background app */
+    }
+
+    #dialog-container {
+        width: 50%;
+        height: auto;
+        border: thick $primary;
+        background: $panel;
+        padding: 1 2;
+        align: center middle;
+    }
+    
+    Button {
+        margin: 1 4;
+    }
+
+    Markdown {
+        margin: 1 0;
+    }
+
+    #bottom-buttons {
+        align: center bottom;
+    }
+    """
+
+    BINDINGS = [
+        Binding("down", "app.focus_next", show=False),
+        Binding("right", "app.focus_next", show=False),
+        Binding("up", "app.focus_previous", show=False),
+        Binding("left", "app.focus_previous", show=False),
+    ]
+
+    def __init__(self, kb: Keybind):
+        super().__init__()
+        self.kb = kb
+
+        self.modifiers = SelectionList(*[(v, v) for v in MODIFIERS])
+        self.action_type_picker = LimitedFocusRadioSet(*ACTION_TYPES)
+
+    def compose(self):
+        with VerticalScroll(id="dialog-container"):
+            yield Label("Modifiers")
+            yield self.modifiers
+
+            yield Label("Button")
+            yield Input()
+
+            yield Rule()
+
+            with TabbedContent(*ACTION_TYPES):
+                yield Select([(c, c) for c in HYPRLAND_COMMANDS])
+                yield Input(placeholder="shell command")
+                yield Select([("flatpaks here", "flatpaks here")])
+                yield Select([("todo", "todo"), ("whatever", "whatever")])
+
+            yield HorizontalGroup(
+                Button("Confirm", id="confirm-close", variant="success"),
+                Button("Cancel", id="cancel-close", variant="error"),
+                id="bottom-buttons",
+            )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if "confirm" in event.button.id:
+            pass
+
+        if "close" in event.button.id:
+            self.dismiss()  # Closes the popup
+
+
 class KeybindManager:
     def __init__(self, state: HyprlandState):
         self.keybinds: Dict[str, Keybind] = {}
@@ -80,7 +184,7 @@ class KeybindManager:
         if not kb:
             return None
 
-        # TODO make the actual dialog and return it
+        return KeybindDialog(kb)
 
     def apply_keybind(self, kb: Keybind):
         self.config.set("bind", kb.conf_style)

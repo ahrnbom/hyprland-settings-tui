@@ -1,29 +1,11 @@
 from hyprland_schema import HyprOption
-from textual.binding import Binding
 from textual.containers import Container, HorizontalGroup, VerticalGroup
 from textual.widget import Widget
-from textual.widgets import Input, Label, RadioSet, Rule, Static
+from textual.widgets import Input, Label, Rule, Static
 
+from hyprland_settings_tui.widgets import LimitedFocusRadioSet
 from hyprland_settings_tui.colors import Gradient, parse_color
 from hyprland_settings_tui.setting import Setting
-
-
-class LimitedFocusRadioSet(RadioSet, inherit_bindings=False):
-    BINDINGS = [
-        Binding(
-            "down",
-            "next_button",
-            "Next option",
-            show=False,
-        ),
-        Binding("enter,space", "toggle_button", "Toggle", show=False),
-        Binding(
-            "up",
-            "previous_button",
-            "Previous option",
-            show=False,
-        ),
-    ]
 
 
 class Picker:
