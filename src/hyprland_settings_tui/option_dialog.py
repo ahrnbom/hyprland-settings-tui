@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List
 from textual.binding import Binding
 from textual.containers import HorizontalGroup, Vertical
@@ -6,7 +7,17 @@ from textual.widgets import Button, Label, Select
 from rich.text import Text
 
 
-class OptionDialog(ModalScreen):
+@dataclass
+class OptionDialogOutput:
+    opt: str = ""
+    options_name: str = ""
+
+    @property
+    def success(self):
+        return len(self.opt) > 0
+
+
+class OptionDialog(ModalScreen[OptionDialogOutput]):
     BINDINGS = [
         Binding("down", "app.focus_next", show=False),
         Binding("right", "app.focus_next", show=False),
@@ -37,7 +48,7 @@ class OptionDialog(ModalScreen):
         margin: 1 4;
     }
 
-    #bottom-buttons {
+    .button-row {
         align: center bottom;
     }
     """
@@ -66,11 +77,13 @@ class OptionDialog(ModalScreen):
             yield HorizontalGroup(
                 Button("Confirm", id="confirm-close", variant="success"),
                 Button("Cancel", id="cancel-close", variant="warning"),
+                classes="button-row",
             )
 
     def on_button_pressed(self, event: Button.Pressed):
-        out: str | None = None
+        out = OptionDialogOutput(options_name=self.options_name)
+
         if "confirm" in event.button.id and isinstance(self.select.value, str):
-            out = self.select.value
+            out.opt = self.select.value
 
         self.dismiss(out)

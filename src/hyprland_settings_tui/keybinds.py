@@ -23,7 +23,7 @@ from hyprland_settings_tui.find_commands import (
     find_flatpak_commands,
     find_noctalia_commands,
 )
-from hyprland_settings_tui.option_dialog import OptionDialog
+from hyprland_settings_tui.option_dialog import OptionDialog, OptionDialogOutput
 
 COLUMNS = ["Keys", "Action", "Status"]
 NEW_KEYBIND_ROW_KEY = "<NEW_KEYBIND>"
@@ -260,7 +260,7 @@ class KeybindDialog(ModalScreen):
             name = ""
             if "noctalia" in event.button.id:
                 options, infos = find_noctalia_commands()
-                name = "Noctalia commands"
+                name = "Noctalia v5 commands"
             elif "flatpak" in event.button.id:
                 options, infos = find_flatpak_commands()
                 name = "Flatpak apps"
@@ -272,9 +272,14 @@ class KeybindDialog(ModalScreen):
     def action_cancel(self):
         self.dismiss(KeybindResult.IGNORE)
 
-    def autoconfig_callback(self, value: str | None):
-        if value:
-            self.notify(value)
+    def autoconfig_callback(self, out):
+        if not isinstance(out, OptionDialogOutput) or not out.success:
+            return
+
+        if "flatpak" in out.options_name.lower():
+            self.arg_input.value = f"flatpak run {out.opt}"
+        elif "noctalia" in out.options_name.lower():
+            self.arg_input.value = f"noctalia msg {out.opt}"
 
 
 class KeybindManager:
