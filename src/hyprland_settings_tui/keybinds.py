@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import dataclass, field
 import enum
 from typing import Dict, List
@@ -309,6 +310,7 @@ class KeybindManager:
         self.state = state
         self.config = state.document
         self.current_keybind: Keybind | None = None
+        self.old_keybind: Keybind | None = None
 
         self.table = DataTable(name="keybinds", zebra_stripes=True, cursor_type="row")
         self.table.add_columns(*[(col, col) for col in COLUMNS])
@@ -336,14 +338,15 @@ class KeybindManager:
             kb = Keybind()
 
         self.current_keybind = kb
+        self.old_keybind = deepcopy(kb)
         return KeybindDialog(kb)
 
-    def apply_keybind(self, kb: Keybind):
+    def apply_keybind(self, kb: Keybind, old_kb: Keybind):
         if not kb:
             return
 
         if kb.row_key in self.keybinds:
-            self.config.remove_where("bind", lambda args: kb.matches(args))
+            self.config.remove_where("bind", lambda args: old_kb.matches(args))
 
         self.config.append("bind", kb.conf_style)
         self.config.save()
@@ -353,13 +356,13 @@ class KeybindManager:
         self.config.remove_where("bind", lambda args: kb.matches(args))
 
     def dialog_exit_callback(self, result: KeybindResult):
-        if self.current_keybind is None:
+        if self.current_keybind is None or self.old_keybind is None:
             keybind_errors.append("No keybind!")
             return
 
         if result == KeybindResult.SUCCESS:
-            self.apply_keybind(self.current_keybind)
+            self.apply_keybind(self.current_keybind, self.old_keybind)
         elif result == KeybindResult.REMOVE:
-            self.remove_keybind(self.current_keybind)
+            self.remove_keybind(self.old_keybind)
 
         self.current_keybind = None
