@@ -28,13 +28,13 @@ from hyprland_settings_tui.option_dialog import OptionDialog
 COLUMNS = ["Keys", "Action", "Status"]
 NEW_KEYBIND_ROW_KEY = "<NEW_KEYBIND>"
 MODIFIERS = ["ctrl", "alt", "shift", "super"]
-ACTION_TYPES = ["hyprland command", "shell command", "flatpak run", "noctalia command"]
 HYPRLAND_COMMANDS = [
     "exec",
     "killactive",
     "togglefloating",
     "movefocus",
     "workspace",
+    "movewindow",
     "movetoworkspace",
     "togglespecialworkspace",
     "changegroupactive",
@@ -78,16 +78,25 @@ class Keybind:
             arg = ""
         return cls(modifier=mod, button=but, command=cmd, argument=arg)
 
+    def lowerify(self):
+        self.modifier = self.modifier.lower()
+        self.command = self.command.lower()
+        if len(self.button.strip()) == 1:
+            self.button = self.button.strip().lower()
+
     @property
     def key_combo(self):
         if self.modifier:
-            return f"{self.modifier} + {self.button}"
+            buttons = [x for x in self.modifier.split(" ") if x]
+            buttons.append(self.button)
+            return " + ".join(buttons)
 
         return self.button
 
     @property
     def row(self):
-        return (self.key_combo, f"{self.command}: {self.argument}")
+        arg_str = f": {self.argument}" if self.argument else ""
+        return (self.key_combo, f"{self.command}{arg_str}")
 
     @property
     def conf_style(self):
@@ -124,7 +133,7 @@ class KeybindDialog(ModalScreen):
     }
 
     #dialog-container {
-        width: 50%;
+        width: 90%;
         height: auto;
         border: thick $primary;
         background: $panel;
@@ -133,7 +142,7 @@ class KeybindDialog(ModalScreen):
     }
     
     Input {
-        max-width: 50%
+        max-width: 50%;
     }
 
     Button {
@@ -144,7 +153,7 @@ class KeybindDialog(ModalScreen):
         margin: 1 0;
     }
 
-    #bottom-buttons {
+    .button-row {
         align: center bottom;
     }
     """
@@ -154,19 +163,24 @@ class KeybindDialog(ModalScreen):
         Binding("right", "app.focus_next", show=False),
         Binding("up", "app.focus_previous", show=False),
         Binding("left", "app.focus_previous", show=False),
+        Binding("escape", "cancel", show=False),
     ]
 
     def __init__(self, kb: Keybind):
         super().__init__()
+        kb.lowerify()
         self.kb = kb
 
-        self.modifiers = SelectionList(*[(v, v) for v in MODIFIERS])
-        self.button_input = Input()
+        self.modifiers = SelectionList(*[(v, v, (v in kb.modifier)) for v in MODIFIERS])
+        self.button_input = Input(value=kb.button)
 
+        cmd_val = kb.command if kb.command else HYPRLAND_COMMANDS[0]
         self.cmd_select = Select(
-            [(v, v) for v in HYPRLAND_COMMANDS], prompt="Hyprland command"
+            [(v, v) for v in HYPRLAND_COMMANDS], allow_blank=False, value=cmd_val
         )
-        self.arg_input = Input(placeholder="command/argument")
+
+        arg_val = kb.argument if kb.argument else None
+        self.arg_input = Input(value=arg_val, placeholder="command/argument")
 
     def compose(self):
         with VerticalScroll(id="dialog-container"):
@@ -190,6 +204,7 @@ class KeybindDialog(ModalScreen):
                     id="autoconfig-noctalia",
                     variant="primary",
                 ),
+                classes="button-row",
             )
 
             yield Rule()
@@ -198,7 +213,7 @@ class KeybindDialog(ModalScreen):
                 Button("Confirm", id="confirm-close", variant="success"),
                 Button("Cancel", id="cancel-close", variant="warning"),
                 Button("Remove", id="remove-close", variant="error"),
-                id="bottom-buttons",
+                classes="button-row",
             )
 
     def update_keybind(self):
@@ -253,6 +268,9 @@ class KeybindDialog(ModalScreen):
                 self.app.push_screen(
                     OptionDialog(options, infos, name), self.autoconfig_callback
                 )
+
+    def action_cancel(self):
+        self.dismiss(KeybindResult.IGNORE)
 
     def autoconfig_callback(self, value: str | None):
         if value:

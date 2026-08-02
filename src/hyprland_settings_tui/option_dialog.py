@@ -2,7 +2,7 @@ from typing import List
 from textual.binding import Binding
 from textual.containers import HorizontalGroup, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Label, Markdown, Select
+from textual.widgets import Button, Label, Select
 from rich.text import Text
 
 
@@ -21,7 +21,7 @@ class OptionDialog(ModalScreen):
     }
 
     #dialog-container {
-        width: 50%;
+        width: 80%;
         height: auto;
         border: thick $primary;
         background: $panel;
@@ -51,10 +51,12 @@ class OptionDialog(ModalScreen):
         self.options_name = options_name
 
         _sel = {
-            opt: Text.assemble(opt, (f"\n  {info}", "#cccccc italic"))
+            opt: Text.assemble(f"{opt}", (f"\n  {info}", "#aaaaaa italic"))
             for (opt, info) in zip(options, infos)
         }
-        self.select = Select([(sel, opt) for (opt, sel) in _sel.items()])
+        self.select = Select(
+            [(sel, opt) for (opt, sel) in _sel.items()], classes="loose"
+        )
 
     def compose(self):
         with Vertical(id="dialog-container"):
