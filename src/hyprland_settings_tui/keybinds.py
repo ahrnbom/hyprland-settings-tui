@@ -19,6 +19,7 @@ from textual.widgets import (
 )
 from rich.text import Text
 
+from hyprland_settings_tui.common_special_buttons import SPECIAL_BUTTONS
 from hyprland_settings_tui.find_commands import (
     find_flatpak_commands,
     find_noctalia_commands,
@@ -149,12 +150,16 @@ class KeybindDialog(ModalScreen):
         margin: 1 4;
     }
 
-    Markdown {
-        margin: 1 0;
+    #button-input {
+        margin: 1 4;
     }
 
     .button-row {
         align: center bottom;
+    }
+
+    Label {
+        margin: 1 0 0 0;
     }
     """
 
@@ -172,7 +177,7 @@ class KeybindDialog(ModalScreen):
         self.kb = kb
 
         self.modifiers = SelectionList(*[(v, v, (v in kb.modifier)) for v in MODIFIERS])
-        self.button_input = Input(value=kb.button)
+        self.button_input = Input(value=kb.button, id="button-input")
 
         cmd_val = kb.command if kb.command else HYPRLAND_COMMANDS[0]
         self.cmd_select = Select(
@@ -188,7 +193,10 @@ class KeybindDialog(ModalScreen):
             yield self.modifiers
 
             yield Label("Button")
-            yield self.button_input
+            yield HorizontalGroup(
+                self.button_input,
+                Button("Special buttons", variant="primary", id="special-buttons"),
+            )
 
             yield Rule()
 
@@ -200,7 +208,7 @@ class KeybindDialog(ModalScreen):
                     variant="primary",
                 ),
                 Button(
-                    "autoconfig: noctalia command",
+                    "autoconfig: noctalia v5 command",
                     id="autoconfig-noctalia",
                     variant="primary",
                 ),
@@ -268,9 +276,22 @@ class KeybindDialog(ModalScreen):
                 self.app.push_screen(
                     OptionDialog(options, infos, name), self.autoconfig_callback
                 )
+        elif event.button.id == "special-buttons":
+            buttons = [x[1] for x in SPECIAL_BUTTONS]
+            button_infos = [x[0] for x in SPECIAL_BUTTONS]
+            self.app.push_screen(
+                OptionDialog(buttons, button_infos, "Special buttons"),
+                self.special_buttons_callback,
+            )
 
     def action_cancel(self):
         self.dismiss(KeybindResult.IGNORE)
+
+    def special_buttons_callback(self, out):
+        if not isinstance(out, OptionDialogOutput) or not out.success:
+            return
+
+        self.button_input.value = out.opt
 
     def autoconfig_callback(self, out):
         if not isinstance(out, OptionDialogOutput) or not out.success:
