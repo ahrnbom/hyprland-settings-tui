@@ -26,7 +26,7 @@ def find_noctalia_commands():
 
 def find_flatpak_commands():
     return parse_lines_after_keyword(
-        "flatpak list --app --columns=name,application", None, "\t"
+        "flatpak list --app --columns=application,name", None, "\t"
     )
 
 

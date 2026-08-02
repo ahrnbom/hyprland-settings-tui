@@ -23,6 +23,7 @@ from hyprland_settings_tui.find_commands import (
     find_flatpak_commands,
     find_noctalia_commands,
 )
+from hyprland_settings_tui.option_dialog import OptionDialog
 
 COLUMNS = ["Keys", "Action", "Status"]
 NEW_KEYBIND_ROW_KEY = "<NEW_KEYBIND>"
@@ -162,7 +163,9 @@ class KeybindDialog(ModalScreen):
         self.modifiers = SelectionList(*[(v, v) for v in MODIFIERS])
         self.button_input = Input()
 
-        self.cmd_select = Select([(v, v) for v in HYPRLAND_COMMANDS])
+        self.cmd_select = Select(
+            [(v, v) for v in HYPRLAND_COMMANDS], prompt="Hyprland command"
+        )
         self.arg_input = Input(placeholder="command/argument")
 
     def compose(self):
@@ -222,7 +225,7 @@ class KeybindDialog(ModalScreen):
         self.kb.button = button
         return True
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed):
         out: KeybindResult = KeybindResult.IGNORE
         if "confirm" in event.button.id:
             success = self.update_keybind()
@@ -232,22 +235,28 @@ class KeybindDialog(ModalScreen):
             out = KeybindResult.REMOVE
 
         if "close" in event.button.id:
-            self.dismiss(
-                out
-            )  # Closes the popup, with return value provided to callback
+            # Closes the popup, with return value provided to callback
+            self.dismiss(out)
             return
 
         if "autoconfig" in event.button.id:
             options: List[str] = []
             infos: List[str] = []
+            name = ""
             if "noctalia" in event.button.id:
                 options, infos = find_noctalia_commands()
+                name = "Noctalia commands"
             elif "flatpak" in event.button.id:
                 options, infos = find_flatpak_commands()
-
-            # TODO do something with them!
+                name = "Flatpak apps"
             if options:
-                keybind_errors.append("\n".join(options))
+                self.app.push_screen(
+                    OptionDialog(options, infos, name), self.autoconfig_callback
+                )
+
+    def autoconfig_callback(self, value: str | None):
+        if value:
+            self.notify(value)
 
 
 class KeybindManager:
