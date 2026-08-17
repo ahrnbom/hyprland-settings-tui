@@ -1,33 +1,44 @@
-from typing import List
-
 from hyprland_monitors import MonitorState
 from hyprland_state import HyprlandState
 from textual.containers import VerticalGroup, VerticalScroll
-from textual.widget import Widget
-from textual.widgets import Select, Static
+from textual.widgets import Rule, Select, Static
 
 
-class MonitorsManager:
+class MonitorsManager(VerticalScroll):
     def __init__(self, state: HyprlandState):
         self.state = state
+        self._ready = False
 
-        monitor_controls: List[Widget] = []
-        for mon in self.state.monitors.get_all_cached():
-            monitor_controls.append(self.make_monitor_control(mon))
+        controls = [
+            self._make_monitor_control(mon)
+            for mon in self.state.monitors.get_all_cached()
+        ]
 
-        self.widget = VerticalScroll(*monitor_controls)
+        super().__init__(*controls)
+        self.widget = self
 
-    def make_monitor_control(self, mon: MonitorState):
-        content: List[Widget] = []
-        content.append(Static(f"{mon.name}: {mon.make}"))
-
-        content.append(
+    def _make_monitor_control(self, mon: MonitorState) -> VerticalGroup:
+        return VerticalGroup(
+            Static(f"{mon.name}: {mon.make}"),
             Select.from_values(
                 mon.available_modes,
                 prompt="Monitor mode",
                 allow_blank=False,
-                value=mon.available_modes[0], # TODO - this should probably be mon.mode
-            )
+                value=mon.mode or mon.available_modes[0],
+                id=mon.name,
+            ),
+            Rule(),
         )
 
-        return VerticalGroup(*content)
+    def on_mount(self) -> None:
+        self.call_after_refresh(self._enable_events)
+
+    def _enable_events(self) -> None:
+        self._ready = True
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if not self._ready:
+            return
+
+        event.stop()
+        self.notify(f"Handled: {event.select.id} {event.select.value}")
