@@ -125,11 +125,21 @@ class MainScreen(Screen):
     def save(self):
         saved = self.state.save()
         saved_something = len(saved) > 0
+        saved_monitors = False
+
+        if self.state.monitors.is_dirty():
+            self.monitors.apply_to_document()
+            saved_monitors = True
+            saved_something = True
+
         if self.state.document.dirty:
             self.state.document.save()
             saved_something = True
-        if self.state.monitors._state.document.dirty:
-            self.state.monitors._state.document.save()
+
+        if saved_monitors:
+            self.state.monitors.mark_saved()
+            self.state.monitors.sync()
+
         self.reload_all_settings()
         return saved_something
 

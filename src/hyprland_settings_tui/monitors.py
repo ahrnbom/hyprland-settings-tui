@@ -1,4 +1,4 @@
-from hyprland_monitors import MonitorState
+from hyprland_monitors import MonitorState, lines_from_monitors
 from hyprland_state import HyprlandState
 from textual.containers import Grid, VerticalScroll
 from textual.widgets import Input, Rule, Select, Static
@@ -34,6 +34,11 @@ class MonitorsManager(VerticalScroll):
             m.name: m.mode or m.available_modes[0] for m in self.monitors
         }
         self.curr_scales = {m.name: m.scale for m in self.monitors}
+
+    def apply_to_document(self):
+        lines = lines_from_monitors(self.monitors)
+        for line in lines:
+            self.state.document.append("monitor", line)
 
     def compose(self):
         for mon in self.monitors:
