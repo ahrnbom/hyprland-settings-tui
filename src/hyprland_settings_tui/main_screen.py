@@ -9,6 +9,7 @@ from textual.widgets import DataTable, Footer, Header, Label, TabPane, TabbedCon
 
 from hyprland_settings_tui.dialog import Dialog
 from hyprland_settings_tui.keybinds import KeybindManager, keybind_errors
+from hyprland_settings_tui.monitors import MonitorsManager
 from hyprland_settings_tui.setting import to_setting, Setting
 
 COLUMNS = ["Setting", "Status", "Value", "Default", "On disk", "Type", "Description"]
@@ -59,6 +60,7 @@ class MainScreen(Screen):
         self.tables: Dict[str, DataTable] = {}
 
         self.keybinds = KeybindManager(state)
+        self.monitors = MonitorsManager(state)
 
     def compose(self):
         header = Header(show_clock=True)
@@ -95,6 +97,8 @@ class MainScreen(Screen):
         match section:
             case "keybinds":
                 return self.keybinds.table
+            case "monitors":
+                return self.monitors.widget
             case _:
                 return Label(section)
 
