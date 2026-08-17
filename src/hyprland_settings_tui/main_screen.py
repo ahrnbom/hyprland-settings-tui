@@ -128,6 +128,8 @@ class MainScreen(Screen):
         if self.state.document.dirty:
             self.state.document.save()
             saved_something = True
+        if self.state.monitors._state.document.dirty:
+            self.state.monitors._state.document.save()
         self.reload_all_settings()
         return saved_something
 

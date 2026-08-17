@@ -1,6 +1,6 @@
 from hyprland_monitors import MonitorState
 from hyprland_state import HyprlandState
-from textual.containers import Grid, HorizontalGroup, VerticalScroll
+from textual.containers import Grid, VerticalScroll
 from textual.widgets import Input, Rule, Select, Static
 
 
@@ -27,6 +27,7 @@ class MonitorsManager(VerticalScroll):
         super().__init__()
 
         self.monitors = self.state.monitors.get_all_cached()
+        self.mon_by_name = {m.name: m for m in self.monitors}
         self.widget = self
 
         self.curr_modes = {
@@ -64,10 +65,15 @@ class MonitorsManager(VerticalScroll):
         event.stop()
         _, _, mon_name = event.select.id.partition("___")
         curr_mode = self.curr_modes.get(mon_name)
-        if curr_mode == event.select.value:
+        new_mode = str(event.select.value)
+        if curr_mode == new_mode:
             return
 
-        self.notify(f"Handled: {mon_name} {event.select.value}")
+        self.notify(f"Setting monitor mode of {mon_name} to {new_mode}")
+        mon = self.mon_by_name[mon_name]
+        mon.mode = new_mode
+        self.state.monitors.apply_one(mon)
+        self.curr_modes[mon_name] = new_mode
 
     def on_input_submitted(self, event: Input.Changed):
         event.stop()
@@ -79,6 +85,11 @@ class MonitorsManager(VerticalScroll):
         except ValueError:
             return
 
-        if abs(curr_scale - new_scale) < 1 / 12:
+        if abs(curr_scale - new_scale) < 0.001:
             return
-        self.notify(mon_name + f" {event.input.value}")
+        self.notify(f"Setting scale of {mon_name} to {event.input.value}")
+
+        mon = self.mon_by_name[mon_name]
+        mon.scale = new_scale
+        self.state.monitors.apply_one(mon)
+        self.curr_scales[mon_name] = new_scale
