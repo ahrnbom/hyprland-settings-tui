@@ -20,3 +20,4 @@ dev = [
 
 [project.scripts]
 hyprland-settings-tui = "hyprland_settings_tui.main:main"
+hyprland-settings-tui-create-application-shortcut = "hyprland_settings_tui.main:create_application_shortcut"
