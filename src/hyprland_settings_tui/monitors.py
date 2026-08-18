@@ -37,8 +37,12 @@ class MonitorsManager(VerticalScroll):
 
     def apply_to_document(self):
         lines = lines_from_monitors(self.monitors)
-        for line in lines:
+        for mon, line in zip(self.monitors, lines):
+            self.state.document.remove_where(
+                "monitor", lambda l: l.startswith(f"{mon.name},")
+            )
             self.state.document.append("monitor", line)
+            self.notify(line)
 
     def compose(self):
         for mon in self.monitors:
@@ -77,6 +81,7 @@ class MonitorsManager(VerticalScroll):
         self.notify(f"Setting monitor mode of {mon_name} to {new_mode}")
         mon = self.mon_by_name[mon_name]
         mon.mode = new_mode
+
         self.state.monitors.apply_one(mon)
         self.curr_modes[mon_name] = new_mode
 

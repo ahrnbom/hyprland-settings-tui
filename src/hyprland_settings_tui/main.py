@@ -42,6 +42,8 @@ Categories=Utility;
     desktop_dir = Path.home() / ".local" / "share" / "applications"
     desktop_dir.mkdir(parents=True, exist_ok=True)
 
+    # TODO install icon as well!
+
     desktop_file = desktop_dir / "hyprland-settings-tui.desktop"
     desktop_file.write_text(desktop_content)
     print(f"Created desktop shortcut at {desktop_file}")
