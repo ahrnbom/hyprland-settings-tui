@@ -1,6 +1,6 @@
 [project]
 name = "hyprland-settings-tui"
-version = "0.1.3"
+version = "0.1.4"
 description = "A TUI editor for hyprland.lua configs"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -9,6 +9,10 @@ dependencies = [
     "msgspec~=0.21.1",
     "textual~=8.2.8",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.uv]
 package = true
