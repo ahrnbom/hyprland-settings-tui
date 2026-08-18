@@ -1,6 +1,6 @@
 [project]
 name = "hyprland-settings-tui"
-version = "0.1.1"
+version = "0.1.2"
 description = "A TUI editor for hyprland.lua configs"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -17,6 +17,9 @@ package = true
 dev = [
     "pytest>=9.1.1",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hyprland_settings_tui"]
 
 [project.scripts]
 hyprland-settings-tui = "hyprland_settings_tui.main:main"
